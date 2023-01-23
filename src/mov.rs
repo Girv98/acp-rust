@@ -1,28 +1,19 @@
+use crate::constants::Squares;
+
 
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Move {
     pub piece: u8,
-    pub from_sq: u64,   // IMPL: Only single bit should be set
-    pub to_sq: u64,     // IMPL: 〃
+    pub from_sq: Squares,   // NOTE: Only a single bit should be set
+    pub to_sq: Squares,     // NOTE: 〃
     pub is_capture: bool, 
     pub is_promotion: bool,
 
 }
 
 impl Move {
-    fn from_sq_sanity_check(&self) {
-        if self.from_sq.count_ones() != 1 {
-            panic!("Move.from_sq contains more than one square")
-        }
+    pub fn new(piece:u8, from_sq: Squares, to_sq: Squares, is_capture: bool, is_promotion: bool) -> Self {
+        Self { piece, from_sq, to_sq, is_capture, is_promotion }
     }
-     
-    fn to_sq_sanity_check(&self) {
-        if self.to_sq.count_ones() != 1 {
-            panic!("Move.from_sq contains more than one square")
-        }
-    }
-
-
-
 }

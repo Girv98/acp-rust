@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 
 pub const INITIAL_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -40,18 +39,37 @@ pub const CENTRE: u64 = (FILE_D | FILE_E) & (RANK_4 | RANK_5);
 // ]);
 
 pub fn squares(n: &str) -> Option<u64> {
+    use Squares::*;
     Some(1 << (match n.to_lowercase().as_str() {
-        "a8" => 7*8+0, "b8" => 7*8+1, "c8" => 7*8+2, "d8" => 7*8+3, "e8" => 7*8+4, "f8" => 7*8+5, "g8" => 7*8+6, "h8" => 7*8+7,
-        "a7" => 6*8+0, "b7" => 6*8+1, "c7" => 6*8+2, "d7" => 6*8+3, "e7" => 6*8+4, "f7" => 6*8+5, "g7" => 6*8+6, "h7" => 6*8+7,
-        "a6" => 5*8+0, "b6" => 5*8+1, "c6" => 5*8+2, "d6" => 5*8+3, "e6" => 5*8+4, "f6" => 5*8+5, "g6" => 5*8+6, "h6" => 5*8+7,
-        "a5" => 4*8+0, "b5" => 4*8+1, "c5" => 4*8+2, "d5" => 4*8+3, "e5" => 4*8+4, "f5" => 4*8+5, "g5" => 4*8+6, "h5" => 4*8+7,
-        "a4" => 3*8+0, "b4" => 3*8+1, "c4" => 3*8+2, "d4" => 3*8+3, "e4" => 3*8+4, "f4" => 3*8+5, "g4" => 3*8+6, "h4" => 3*8+7,
-        "a3" => 2*8+0, "b3" => 2*8+1, "c3" => 2*8+2, "d3" => 2*8+3, "e3" => 2*8+4, "f3" => 2*8+5, "g3" => 2*8+6, "h3" => 2*8+7,
-        "a2" => 1*8+0, "b2" => 1*8+1, "c2" => 1*8+2, "d2" => 1*8+3, "e2" => 1*8+4, "f2" => 1*8+5, "g2" => 1*8+6, "h2" => 1*8+7,
-        "a1" => 0*8+0, "b1" => 0*8+1, "c1" => 0*8+2, "d1" => 0*8+3, "e1" => 0*8+4, "f1" => 0*8+5, "g1" => 0*8+6, "h1" => 0*8+7,
+        "a8" => A8 as u8, "b8" => B8 as u8, "c8" => C8 as u8, "d8" => D8 as u8, "e8" => E8 as u8, "f8" => F8 as u8, "g8" => G8 as u8, "h8" => H8 as u8,
+        "a7" => A7 as u8, "b7" => B7 as u8, "c7" => C7 as u8, "d7" => D7 as u8, "e7" => E7 as u8, "f7" => F7 as u8, "g7" => G7 as u8, "h7" => H7 as u8,
+        "a6" => A6 as u8, "b6" => B6 as u8, "c6" => C6 as u8, "d6" => D6 as u8, "e6" => E6 as u8, "f6" => F6 as u8, "g6" => G6 as u8, "h6" => H6 as u8,
+        "a5" => A5 as u8, "b5" => B5 as u8, "c5" => C5 as u8, "d5" => D5 as u8, "e5" => E5 as u8, "f5" => F5 as u8, "g5" => G5 as u8, "h5" => H5 as u8,
+        "a4" => A4 as u8, "b4" => B4 as u8, "c4" => C4 as u8, "d4" => D4 as u8, "e4" => E4 as u8, "f4" => F4 as u8, "g4" => G4 as u8, "h4" => H4 as u8,
+        "a3" => A3 as u8, "b3" => B3 as u8, "c3" => C3 as u8, "d3" => D3 as u8, "e3" => E3 as u8, "f3" => F3 as u8, "g3" => G3 as u8, "h3" => H3 as u8,
+        "a2" => A2 as u8, "b2" => B2 as u8, "c2" => C2 as u8, "d2" => D2 as u8, "e2" => E2 as u8, "f2" => F2 as u8, "g2" => G2 as u8, "h2" => H2 as u8,
+        "a1" => A1 as u8, "b1" => B1 as u8, "c1" => C1 as u8, "d1" => D1 as u8, "e1" => E1 as u8, "f1" => F1 as u8, "g1" => G1 as u8, "h1" => H1 as u8,
         _ => return None
 
     }))
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Squares {
+    A1, B1, C1, D1, E1, F1, G1, H1,
+    A2, B2, C2, D2, E2, F2, G2, H2,
+    A3, B3, C3, D3, E3, F3, G3, H3,
+    A4, B4, C4, D4, E4, F4, G4, H4,
+    A5, B5, C5, D5, E5, F5, G5, H5,
+    A6, B6, C6, D6, E6, F6, G6, H6,
+    A7, B7, C7, D7, E7, F7, G7, H7,
+    A8, B8, C8, D8, E8, F8, G8, H8,
+}
+
+impl Default for Squares {
+    fn default() -> Self {
+        Squares::A1
+    }
 }
 
 pub fn knight_moves_bb(sq: u64) -> u64 {
@@ -110,19 +128,19 @@ fn rev_rank_test() {
 pub fn pp_bb(bb: u64) {
     
     let ranks = [
-        rank_to_str(rev_rank(((bb & RANK_8) >> (64-8*1)) as u8)),
+        rank_to_str(rev_rank(((bb & RANK_8) >> (64-8))   as u8)),
         rank_to_str(rev_rank(((bb & RANK_7) >> (64-8*2)) as u8)),
         rank_to_str(rev_rank(((bb & RANK_6) >> (64-8*3)) as u8)),
         rank_to_str(rev_rank(((bb & RANK_5) >> (64-8*4)) as u8)),
         rank_to_str(rev_rank(((bb & RANK_4) >> (64-8*5)) as u8)),
         rank_to_str(rev_rank(((bb & RANK_3) >> (64-8*6)) as u8)),
         rank_to_str(rev_rank(((bb & RANK_2) >> (64-8*7)) as u8)),
-        rank_to_str(rev_rank(((bb & RANK_1) >> (64-8*8)) as u8))
+        rank_to_str(rev_rank((bb & RANK_1) as u8))
     ];
 
     let mut output = String::new();
-    let mut letters = vec!["7", "6", "5", "4", "3", "2", "1"].into_iter();
-    output.push_str("8");
+    let mut letters = vec!['7', '6', '5', '4', '3', '2', '1'].into_iter();
+    output.push('8');
 
     for r in ranks {
         let spaced_r: String = r.chars().flat_map(|c| {
@@ -137,7 +155,8 @@ pub fn pp_bb(bb: u64) {
 
     output.push_str("\n~ A B C D E F G H");
 
-    println!("{output}")
+    println!("{output}");
+    println!();
 
 }
 

@@ -1,4 +1,6 @@
 
+use colored::Colorize;
+
 use crate::constants;
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -30,22 +32,12 @@ impl Board {
 
     pub fn get_blk_bb(&self) -> u64 {
         // Bitwise-ORs all black piece bitboards
-        self.b_p_bb
-        | self.b_r_bb
-        | self.b_n_bb
-        | self.b_b_bb
-        | self.b_q_bb
-        | self.b_k_bb
+        self.b_p_bb | self.b_r_bb | self.b_n_bb | self.b_b_bb | self.b_q_bb | self.b_k_bb
     }
 
     pub fn get_wht_bb(&self) -> u64 {
         // Bitwise-ORs all black piece bitboards
-        self.w_p_bb 
-        | self.w_r_bb
-        | self.w_n_bb
-        | self.w_b_bb
-        | self.w_q_bb
-        | self.w_k_bb
+        self.w_p_bb | self.w_r_bb | self.w_n_bb | self.w_b_bb | self.w_q_bb | self.w_k_bb
     }
 
     pub fn get_all_blk_pawn_attacks(&self) -> u64 {
@@ -63,4 +55,41 @@ impl Board {
     pub fn get_all_wht_knight_moves(&self) -> u64 {
         constants::knight_moves_bb(self.w_n_bb)
     }
+
+    pub fn print_board(&self) {
+
+        let mut rank = String::with_capacity(88);
+        let mut letters = vec!['8', '7', '6', '5', '4', '3', '2', '1'].into_iter();
+
+        for i in 0..64 {
+            let offset = 1 << (63-i);
+
+            let prev = rank;
+            // NOTE: ♙♖♘♗♕♔ ♟︎♞♝♜♛♚ don't line up properly 🙃
+                 if self.w_p_bb & offset == offset { rank = format!("{}{}", " P".bright_blue(), &prev); } 
+            else if self.w_r_bb & offset == offset { rank = format!("{}{}", " R".bright_blue(), &prev); } 
+            else if self.w_n_bb & offset == offset { rank = format!("{}{}", " N".bright_blue(), &prev); } 
+            else if self.w_b_bb & offset == offset { rank = format!("{}{}", " B".bright_blue(), &prev); }
+            else if self.w_q_bb & offset == offset { rank = format!("{}{}", " Q".bright_blue(), &prev); }
+            else if self.w_k_bb & offset == offset { rank = format!("{}{}", " K".bright_blue(), &prev); }
+            else if self.b_p_bb & offset == offset { rank = format!("{}{}", " P".bright_red(),  &prev); } 
+            else if self.b_r_bb & offset == offset { rank = format!("{}{}", " R".bright_red(),  &prev); } 
+            else if self.b_n_bb & offset == offset { rank = format!("{}{}", " N".bright_red(),  &prev); } 
+            else if self.b_b_bb & offset == offset { rank = format!("{}{}", " B".bright_red(),  &prev); } 
+            else if self.b_q_bb & offset == offset { rank = format!("{}{}", " Q".bright_red(),  &prev); } 
+            else if self.b_k_bb & offset == offset { rank = format!("{}{}", " K".bright_red(),  &prev); } 
+            else { rank = format!("{}{}", " ·", &prev);}
+
+            // println!("{}", rank.chars().count());
+            if i % 8 == 7 {
+                print!("{}", letters.next().unwrap());
+                println!("{}", rank.as_str());
+                rank = "".to_string();
+            }
+        }
+
+        println!("~ A B C D E F G H");
+
+    }
+    
 }
