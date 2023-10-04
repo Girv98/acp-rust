@@ -1,8 +1,7 @@
-
-use crate::constants::{INITIAL_FEN, squares};
-
-use super::position::Position;
-
+use crate    ::{
+    position :: Position, 
+    core     ::{ Square, INITIAL_FEN } 
+};
 
 #[derive(Debug, Default)]
 pub struct Game {
@@ -47,13 +46,14 @@ impl Game {
                 '0' ..= '9' => {
                     file += c.to_digit(10).unwrap();
                 },
+                // Black Pieces
                 'p' => { position.board.b_p_bb += 1 << (rank * 8 + file); file += 1; },
                 'r' => { position.board.b_r_bb += 1 << (rank * 8 + file); file += 1; },
                 'n' => { position.board.b_n_bb += 1 << (rank * 8 + file); file += 1; },
                 'b' => { position.board.b_b_bb += 1 << (rank * 8 + file); file += 1; },
                 'q' => { position.board.b_q_bb += 1 << (rank * 8 + file); file += 1; },
                 'k' => { position.board.b_k_bb += 1 << (rank * 8 + file); file += 1; },
-
+                // White Pieces
                 'P' => { position.board.w_p_bb += 1 << (rank * 8 + file); file += 1; },
                 'R' => { position.board.w_r_bb += 1 << (rank * 8 + file); file += 1; },
                 'N' => { position.board.w_n_bb += 1 << (rank * 8 + file); file += 1; },
@@ -84,33 +84,29 @@ impl Game {
                 }
             }
         }
-        
         // En Passant Target
-        match squares(fen_parts[3]) {
-            Some(np) => position.en_passant_targ = np,
-            None => if fen_parts[3] != "-" {panic!("Malformed En Passant Target. Can be either a square (i.e. 'A6') or a dash '-' denoting that there is no valid square.")},
+        match Square::str_to_u8(fen_parts[3]) {
+            Some(np) => position.en_passant_targ = Some(np),
+            None if fen_parts[3] == "-" => position.en_passant_targ = None,
+            None => panic!("Malformed En Passant Target. Can be either a square (i.e. 'A6') or a dash '-' denoting that there is no valid square."),
         }
-        
         // Halfmove (ply) clock (used for 50 move rule)
         match fen_parts[4].parse() {
             Ok(num) => position.ply_clock = num,
             _ => panic!("Malformed FEN halfmove clock")
         }
-
         // Fullmove counter 
         match fen_parts[5].parse() {
             Ok(num) => self.mve = num,
             _ => panic!("Malformed FEN fullmoves")
         }
-
+        // Set Ply
         self.ply = self.mve * 2;
-        
         if !position.blacks_move {
             self.ply -= 1;
         }
 
-
-        // TODO: evaluate checks and temporary castling restrictions
+        // TODO(James): evaluate checks and temporary castling restrictions
 
         self.history.push(position);
     }
