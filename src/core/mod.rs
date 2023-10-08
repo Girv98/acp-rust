@@ -145,24 +145,40 @@ impl Square {
     pub fn from_bb(bb: u64) -> Self {
         debug_assert_eq!(bb.count_ones(), 1);
     
-        let n = bb.ilog2() as usize + 1;
+        let n = bb.ilog2() as usize;
         // We are not using TryFrom because we know that the input is correct
         n.into()
     }
 
     pub fn str_to_u8(n: &str) -> Option<u64> {
         use Square::*;
-        Some(1 << (match n.to_lowercase().as_str() {
-            "a8" => A8 as u8, "b8" => B8 as u8, "c8" => C8 as u8, "d8" => D8 as u8, "e8" => E8 as u8, "f8" => F8 as u8, "g8" => G8 as u8, "h8" => H8 as u8,
-            "a7" => A7 as u8, "b7" => B7 as u8, "c7" => C7 as u8, "d7" => D7 as u8, "e7" => E7 as u8, "f7" => F7 as u8, "g7" => G7 as u8, "h7" => H7 as u8,
-            "a6" => A6 as u8, "b6" => B6 as u8, "c6" => C6 as u8, "d6" => D6 as u8, "e6" => E6 as u8, "f6" => F6 as u8, "g6" => G6 as u8, "h6" => H6 as u8,
-            "a5" => A5 as u8, "b5" => B5 as u8, "c5" => C5 as u8, "d5" => D5 as u8, "e5" => E5 as u8, "f5" => F5 as u8, "g5" => G5 as u8, "h5" => H5 as u8,
-            "a4" => A4 as u8, "b4" => B4 as u8, "c4" => C4 as u8, "d4" => D4 as u8, "e4" => E4 as u8, "f4" => F4 as u8, "g4" => G4 as u8, "h4" => H4 as u8,
-            "a3" => A3 as u8, "b3" => B3 as u8, "c3" => C3 as u8, "d3" => D3 as u8, "e3" => E3 as u8, "f3" => F3 as u8, "g3" => G3 as u8, "h3" => H3 as u8,
-            "a2" => A2 as u8, "b2" => B2 as u8, "c2" => C2 as u8, "d2" => D2 as u8, "e2" => E2 as u8, "f2" => F2 as u8, "g2" => G2 as u8, "h2" => H2 as u8,
-            "a1" => A1 as u8, "b1" => B1 as u8, "c1" => C1 as u8, "d1" => D1 as u8, "e1" => E1 as u8, "f1" => F1 as u8, "g1" => G1 as u8, "h1" => H1 as u8,
+        Some(1 << match n.to_lowercase().as_str() {
+            "a8" => A8, "b8" => B8, "c8" => C8, "d8" => D8, "e8" => E8, "f8" => F8, "g8" => G8, "h8" => H8,
+            "a7" => A7, "b7" => B7, "c7" => C7, "d7" => D7, "e7" => E7, "f7" => F7, "g7" => G7, "h7" => H7,
+            "a6" => A6, "b6" => B6, "c6" => C6, "d6" => D6, "e6" => E6, "f6" => F6, "g6" => G6, "h6" => H6,
+            "a5" => A5, "b5" => B5, "c5" => C5, "d5" => D5, "e5" => E5, "f5" => F5, "g5" => G5, "h5" => H5,
+            "a4" => A4, "b4" => B4, "c4" => C4, "d4" => D4, "e4" => E4, "f4" => F4, "g4" => G4, "h4" => H4,
+            "a3" => A3, "b3" => B3, "c3" => C3, "d3" => D3, "e3" => E3, "f3" => F3, "g3" => G3, "h3" => H3,
+            "a2" => A2, "b2" => B2, "c2" => C2, "d2" => D2, "e2" => E2, "f2" => F2, "g2" => G2, "h2" => H2,
+            "a1" => A1, "b1" => B1, "c1" => C1, "d1" => D1, "e1" => E1, "f1" => F1, "g1" => G1, "h1" => H1,
             _ => return None
-        }))
+        } as u8 )
+    }
+
+    pub fn bb_to_str(n: u64) -> Option<&'static str> {
+        let sq = Self::from_bb(n);
+        use Square::*;
+        Some(match sq {
+            A8 => "a8", B8 => "b8", C8 => "c8", D8 => "d8", E8 => "e8", F8 => "f8", G8 => "g8", H8 => "h8",
+            A7 => "a7", B7 => "b7", C7 => "c7", D7 => "d7", E7 => "e7", F7 => "f7", G7 => "g7", H7 => "h7",
+            A6 => "a6", B6 => "b6", C6 => "c6", D6 => "d6", E6 => "e6", F6 => "f6", G6 => "g6", H6 => "h6",
+            A5 => "a5", B5 => "b5", C5 => "c5", D5 => "d5", E5 => "e5", F5 => "f5", G5 => "g5", H5 => "h5",
+            A4 => "a4", B4 => "b4", C4 => "c4", D4 => "d4", E4 => "e4", F4 => "f4", G4 => "g4", H4 => "h4",
+            A3 => "a3", B3 => "b3", C3 => "c3", D3 => "d3", E3 => "e3", F3 => "f3", G3 => "g3", H3 => "h3",
+            A2 => "a2", B2 => "b2", C2 => "c2", D2 => "d2", E2 => "e2", F2 => "f2", G2 => "g2", H2 => "h2",
+            A1 => "a1", B1 => "b1", C1 => "c1", D1 => "d1", E1 => "e1", F1 => "f1", G1 => "g1", H1 => "h1",
+            _ => return None
+        }) 
     }
 
     pub fn to_bb(self) -> u64 {
