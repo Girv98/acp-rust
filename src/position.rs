@@ -13,8 +13,10 @@ pub enum InCheck {
 pub struct Position {
     pub board: Board,
     pub blacks_move: bool,
-    pub castling_rights: u8,            // lowest 4 bits used KQkq   uppercase = White lower = Black 
-    pub castling_restrictions: u8,      // ^^
+    // Upper nibble used for castling rights
+    // Lower nibble used for temp restrictions TODO(James): check if this is even necessary 
+    // KQkqKQkq :  uppercase = White, lower = Black 
+    pub castling: u8,
     pub ply_clock: u8,                  // For 50 move rule
     pub en_passant_targ: Option<u64>,   // is None if last ply was not a double push
     pub check: InCheck,
