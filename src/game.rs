@@ -8,28 +8,64 @@ pub struct Game {
     pub history: Vec<Position>,
     pub ply: u16,
     pub mve: u16,
-
 }
 
 impl Game {
-    pub fn new(fen: String) -> Self {
+    pub fn new(fen: &str) -> Self {
         let mut game = Game::default();
         game.init(fen);
         game
     }
 
-    fn init(&mut self, f: String) {
-        
-        let fen = if f.is_empty() {
-            INITIAL_FEN.to_string()
-        } else {
-            f
-        };
+    fn init(&mut self, fen: &str) {
+        self.from_fen(if fen.is_empty() { INITIAL_FEN } else { fen });
+    }
 
+    pub fn as_fen(&self) -> String {
+        
+        let mut fen = String::new();
+
+
+        { // Piece Placement
+        }
+        { // Active Colour
+            match self.current_position().blacks_move {
+                true => fen.push_str("b "),
+                false => fen.push_str("w "),
+            }
+        }
+        { // Castling Rights
+            
+        }
+        { // En Passant Target
+            match self.current_position().en_passant_targ {
+                Some(x) => {
+                    let sq = Square::bb_to_str(x).expect("TODO");
+                    fen.push_str(sq);
+                    fen.push(' ');
+
+                },
+                None => {
+                    fen.push_str("- ");
+                }
+            }
+        }
+        { // PLy Clock
+            fen.push_str(&self.current_position().ply_clock.to_string());
+            fen.push(' ');
+        }
+        { // Move Counter
+            fen.push_str(&self.mve.to_string());
+            fen.push(' ');
+        }
+        fen
+    }
+
+    pub fn from_fen(&mut self, fen: &str) {
         let fen_parts = fen.split(' ').collect::<Vec<_>>();
 
         if fen_parts.len() != 6 {
-            panic!("Malformed FEN")
+            panic!("Malformed FEN") // Return Error
         }
 
         let mut position = Position::new();
@@ -75,10 +111,10 @@ impl Game {
             _ => {
                 for c in fen_parts[2].chars() {
                     match c {
-                        'K' => { position.castling_rights += 1 << 3 },
-                        'Q' => { position.castling_rights += 1 << 2 },
-                        'k' => { position.castling_rights += 1 << 1 },
-                        'q' => { position.castling_rights += 1 << 0 },
+                        'K' => { position.castling += 1 << 7 },
+                        'Q' => { position.castling += 1 << 6 },
+                        'k' => { position.castling += 1 << 5 },
+                        'q' => { position.castling += 1 << 4 },
                         _  => panic!("Unknown character in FEN castling rights")
                     }
                 }
@@ -111,7 +147,11 @@ impl Game {
         self.history.push(position);
     }
 
-    pub fn generate_fen(&self) -> String {
+    pub fn as_pgn(&self) -> String {
+        todo!()
+    }
+
+    pub fn from_pgn(&mut self) {
         todo!()
     }
 
