@@ -191,6 +191,8 @@ impl Board {
     }
     /// Sees if a given square is under attack by any black piece
     pub fn sq_is_attacked_by_black(&self, sq: Square) -> bool {
+        // Gets a mask of all the squares that black's pieces can capture 
+        // and then sees if the given square is in that mask
         let sq = sq.to_bb();
         ( 
             self.black_pawn_attacks() 
@@ -211,27 +213,27 @@ impl Board {
     } 
 
     pub fn is_piece_pinned_to_king(&self, sq: Square, is_white: bool) -> bool {
-        let king = if is_white { self.w_k_bb } else { self.b_k_bb };
-        let square = sq.to_bb();
+        let _king = if is_white { self.w_k_bb } else { self.b_k_bb };
+        let _square = sq.to_bb();
         todo!()
     } 
 
-    pub fn print_board(&self) {
-        let mut rank = String::with_capacity(88);
-        let mut letters = vec!['8', '7', '6', '5', '4', '3', '2', '1'].into_iter();
-
+    pub fn print_board(&self, white_pov: bool) {
+        let mut rank = String::new();
+        let mut letters = if white_pov {vec!['8', '7', '6', '5', '4', '3', '2', '1']} else {vec!['1', '2', '3', '4', '5', '6', '7', '8']}.into_iter();
+        
         for i in 0..64 {
-            let offset = 1 << (63-i);
+            let offset = if white_pov { 1 << (63-i) } else { 1 << i };
             let prev = rank;
             // NOTE: i would have liked to use ♙♖♘♗♕♔ ♟︎♞♝♜♛♚ but they don't seem to line up properly with certain fonts/terminals 🙃
-            //White Pieces
-                 if (self.w_p_bb & offset) == offset { rank = format!("{}{}", " P".bright_blue(), &prev); } 
+            // White Pieces
+            if (self.w_p_bb & offset) == offset { rank = format!("{}{}", " P".bright_blue(), &prev); } 
             else if (self.w_r_bb & offset) == offset { rank = format!("{}{}", " R".bright_blue(), &prev); } 
             else if (self.w_n_bb & offset) == offset { rank = format!("{}{}", " N".bright_blue(), &prev); } 
             else if (self.w_b_bb & offset) == offset { rank = format!("{}{}", " B".bright_blue(), &prev); }
             else if (self.w_q_bb & offset) == offset { rank = format!("{}{}", " Q".bright_blue(), &prev); }
             else if (self.w_k_bb & offset) == offset { rank = format!("{}{}", " K".bright_blue(), &prev); }
-            // Black pieces
+            // Black Pieces
             else if (self.b_p_bb & offset) == offset { rank = format!("{}{}", " P".bright_red(),  &prev); } 
             else if (self.b_r_bb & offset) == offset { rank = format!("{}{}", " R".bright_red(),  &prev); } 
             else if (self.b_n_bb & offset) == offset { rank = format!("{}{}", " N".bright_red(),  &prev); } 
@@ -246,7 +248,11 @@ impl Board {
                 rank = "".to_string();
             }
         }
-        println!("~ A B C D E F G H");
-    }
-    
+        if white_pov {
+            println!("~ A B C D E F G H");
+        } else {
+            println!("~ H G F E D C B A");
+        }
+
+    }    
 }
