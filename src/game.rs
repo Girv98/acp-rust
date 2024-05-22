@@ -3,7 +3,9 @@ use std::io::{self, Write};
 use colored::Colorize;
 
 use crate    :: {
-    core     :: { Square, INITIAL_FEN }, ply::Colour, position :: Position 
+    ply      :: { Colour, Ply }, 
+    core     :: { Square, INITIAL_FEN }, 
+    position :: Position, 
 };
 
 #[derive(Debug, Default)]
@@ -119,6 +121,10 @@ impl Game {
         todo!()
     }
 
+    fn analyse_user_input(&self, buffer: String) -> Ply {
+        todo!()
+    }
+
     pub fn play_two_player(&mut self) {
 
         loop {
@@ -135,8 +141,11 @@ impl Game {
                 io::stdin().read_line(&mut user_buffer).unwrap();
             }
 
+            println!("{:?}", user_buffer.chars().collect::<Vec<_>>());
             println!("You typed: {user_buffer}");
 
+            let next_move = self.analyse_user_input(user_buffer);
+            // TODO: Do things with move
             
             let mut next_pos = *self.last_position();
             next_pos.was_blacks_move = !next_pos.was_blacks_move;
@@ -148,6 +157,8 @@ impl Game {
             // Update Last_Ply
             self.history.push(next_pos);
             // Update Move & Ply
+            self.mve = if next_pos.was_blacks_move { self.mve + 1} else {self.mve };
+            self.ply = (self.ply % 2) + 1
         }
 
     }
