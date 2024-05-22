@@ -1,6 +1,6 @@
-use crate    ::{
+use crate    :: {
+    core     :: { Square, INITIAL_FEN },
     position :: Position, 
-    core     ::{ Square, INITIAL_FEN } 
 };
 
 #[derive(Debug, Default)]
@@ -11,39 +11,49 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(fen: &str) -> Self {
-        let mut game = Game::default();
-        game.init(fen);
-        game
+    pub fn new() -> Self {
+        Self::from_fen(INITIAL_FEN)
     }
 
-    fn init(&mut self, fen: &str) {
-        self.from_fen(if fen.is_empty() { INITIAL_FEN } else { fen });
-    }
+    // fn init(&mut self, fen: &str) {
+    //     self.from_fen(if fen.is_empty() { INITIAL_FEN } else { fen });
+    // }
 
     pub fn as_fen(&self) -> String {
-        
         let mut fen = String::new();
-
+        let pos = self.current_position();
 
         { // Piece Placement
+            fen.push_str(&pos.board.stringify());
+            fen.push(' ');
         }
         { // Active Colour
-            match self.current_position().blacks_move {
-                true => fen.push_str("b "),
+            match pos.is_blacks_move {
+                true  => fen.push_str("b "),
                 false => fen.push_str("w "),
             }
         }
         { // Castling Rights
+            let mut buf = String::with_capacity(5);
+
+            if pos.castling >> 7     == 1 { buf.push('K'); }
+            if pos.castling >> 6 & 1 == 1 { buf.push('Q'); }
+            if pos.castling >> 5 & 1 == 1 { buf.push('k'); }
+            if pos.castling >> 4 & 1 == 1 { buf.push('q'); }
             
+            if buf.is_empty() {
+                buf.push('-');
+            }
+            buf.push(' ');
+            fen.push_str(&buf);
+
         }
         { // En Passant Target
-            match self.current_position().en_passant_targ {
+            match pos.en_passant_targ {
                 Some(x) => {
-                    let sq = Square::bb_to_str(x).expect("TODO");
+                    let sq = Square::bb_to_str(x);
                     fen.push_str(sq);
                     fen.push(' ');
-
                 },
                 None => {
                     fen.push_str("- ");
@@ -51,21 +61,22 @@ impl Game {
             }
         }
         { // PLy Clock
-            fen.push_str(&self.current_position().ply_clock.to_string());
+            fen.push_str(&pos.ply_clock.to_string());
             fen.push(' ');
         }
         { // Move Counter
             fen.push_str(&self.mve.to_string());
-            fen.push(' ');
         }
         fen
     }
 
-    pub fn from_fen(&mut self, fen: &str) {
+    pub fn from_fen(fen: &str) -> Self {
+        let mut game = Game::default();
+
         let fen_parts = fen.split(' ').collect::<Vec<_>>();
 
         if fen_parts.len() != 6 {
-            panic!("Malformed FEN") // Return Error
+            panic!("Malformed FEN") // TODO: Return Error
         }
 
         let mut position = Position::new();
@@ -101,8 +112,8 @@ impl Game {
         }
         // Active Colour
         match fen_parts[1] {
-            "w" => position.blacks_move = false,
-            "b" => position.blacks_move = true,
+            "w" => position.is_blacks_move = false,
+            "b" => position.is_blacks_move = true,
             _ => panic!("Malformed FEN active colour")
         }
         // Castling Rights
@@ -111,10 +122,10 @@ impl Game {
             _ => {
                 for c in fen_parts[2].chars() {
                     match c {
-                        'K' => { position.castling += 1 << 7 },
-                        'Q' => { position.castling += 1 << 6 },
-                        'k' => { position.castling += 1 << 5 },
-                        'q' => { position.castling += 1 << 4 },
+                        'K' => { position.castling |= 1 << 7 },
+                        'Q' => { position.castling |= 1 << 6 },
+                        'k' => { position.castling |= 1 << 5 },
+                        'q' => { position.castling |= 1 << 4 },
                         _  => panic!("Unknown character in FEN castling rights")
                     }
                 }
@@ -133,18 +144,20 @@ impl Game {
         }
         // Fullmove counter 
         match fen_parts[5].parse() {
-            Ok(num) => self.mve = num,
+            Ok(num) => game.mve = num,
             _ => panic!("Malformed FEN fullmoves")
         }
         // Set Ply
-        self.ply = self.mve * 2;
-        if !position.blacks_move {
-            self.ply -= 1;
+        game.ply = game.mve * 2;
+        if !position.is_blacks_move {
+            game.ply -= 1;
         }
 
         // TODO(James): evaluate checks and temporary castling restrictions
 
-        self.history.push(position);
+        game.history.push(position);
+
+        game
     }
 
     pub fn as_pgn(&self) -> String {
@@ -156,6 +169,6 @@ impl Game {
     }
 
     pub fn current_position(&self) -> &Position {
-        self.history.last().expect("Error: Game has no previous position. This is a bug!")
+        self.history.last().expect("Game History is not empty")
     }
 }

@@ -3,6 +3,7 @@ use colored::Colorize;
 
 use crate::core::Square;
 use crate::core;
+use crate::ply::{Colour, Piece};
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Board {
@@ -218,6 +219,82 @@ impl Board {
         todo!()
     } 
 
+    fn piece_at(&self, offset: u64) -> Option<(Piece, Colour)> {
+        use Piece::*;
+        use Colour::*;
+             if (self.w_p_bb & offset) == offset { Some((Pawn,   White)) }
+        else if (self.w_r_bb & offset) == offset { Some((Rook,   White)) }
+        else if (self.w_n_bb & offset) == offset { Some((Knight, White)) }
+        else if (self.w_b_bb & offset) == offset { Some((Bishop, White)) }
+        else if (self.w_q_bb & offset) == offset { Some((Queen,  White)) }
+        else if (self.w_k_bb & offset) == offset { Some((King,   White)) }
+        // Black Pieces
+        else if (self.b_p_bb & offset) == offset { Some((Pawn,   Black)) }
+        else if (self.b_r_bb & offset) == offset { Some((Rook,   Black)) }
+        else if (self.b_n_bb & offset) == offset { Some((Knight, Black)) }
+        else if (self.b_b_bb & offset) == offset { Some((Bishop, Black)) }
+        else if (self.b_q_bb & offset) == offset { Some((Queen,  Black)) }
+        else if (self.b_k_bb & offset) == offset { Some((King,   Black)) }
+        else { None }
+    }
+
+    pub fn stringify(&self) -> String {
+        let mut str = String::new();
+
+        let mut rank = String::new();
+
+        let mut counter = 0u8;
+        for i in 0..64 {
+            let offset = 1 << (63-i);
+            let piece = match self.piece_at(offset) {
+                Some(piece) => match piece {
+                    // White Pieces
+                    (Piece::Pawn,   Colour::White) => 'P',
+                    (Piece::Rook,   Colour::White) => 'R',
+                    (Piece::Knight, Colour::White) => 'N',
+                    (Piece::Bishop, Colour::White) => 'B',
+                    (Piece::Queen,  Colour::White) => 'Q',
+                    (Piece::King,   Colour::White) => 'K',
+                    // Black Pieces
+                    (Piece::Pawn,   Colour::Black) => 'p',
+                    (Piece::Rook,   Colour::Black) => 'r',
+                    (Piece::Knight, Colour::Black) => 'n',
+                    (Piece::Bishop, Colour::Black) => 'b',
+                    (Piece::Queen,  Colour::Black) => 'q',
+                    (Piece::King,   Colour::Black) => 'k',
+                },
+                None => '\0',
+            };
+
+            if piece == '\0' {
+                counter += 1;
+                debug_assert!(counter < 9 );
+            } else {
+                if counter > 0 {
+                    let c = (48 + counter) as char;
+                    rank.push(c);
+                    counter = 0;
+                }
+                rank.push(piece);
+            }
+
+            if i % 8 == 7 {
+                if counter > 0 {
+                    let c = (48 + counter) as char;
+                    rank.push(c);
+                    counter = 0;
+                }
+                rank.chars().rev().for_each(|c| str.push(c));
+                str.push('/');
+                rank = String::new();
+            }
+
+        }
+
+        str.pop();
+        str
+    }
+
     pub fn print_board(&self, white_pov: bool) {
         let mut rank = String::new();
         let mut letters = if white_pov {vec!['8', '7', '6', '5', '4', '3', '2', '1']} else {vec!['1', '2', '3', '4', '5', '6', '7', '8']}.into_iter();
@@ -226,22 +303,25 @@ impl Board {
             let offset = if white_pov { 1 << (63-i) } else { 1 << i };
             let prev = rank;
             // NOTE: i would have liked to use ♙♖♘♗♕♔ ♟︎♞♝♜♛♚ but they don't seem to line up properly with certain fonts/terminals 🙃
-            // White Pieces
-            if (self.w_p_bb & offset) == offset { rank = format!("{}{}", " P".bright_blue(), &prev); } 
-            else if (self.w_r_bb & offset) == offset { rank = format!("{}{}", " R".bright_blue(), &prev); } 
-            else if (self.w_n_bb & offset) == offset { rank = format!("{}{}", " N".bright_blue(), &prev); } 
-            else if (self.w_b_bb & offset) == offset { rank = format!("{}{}", " B".bright_blue(), &prev); }
-            else if (self.w_q_bb & offset) == offset { rank = format!("{}{}", " Q".bright_blue(), &prev); }
-            else if (self.w_k_bb & offset) == offset { rank = format!("{}{}", " K".bright_blue(), &prev); }
-            // Black Pieces
-            else if (self.b_p_bb & offset) == offset { rank = format!("{}{}", " P".bright_red(),  &prev); } 
-            else if (self.b_r_bb & offset) == offset { rank = format!("{}{}", " R".bright_red(),  &prev); } 
-            else if (self.b_n_bb & offset) == offset { rank = format!("{}{}", " N".bright_red(),  &prev); } 
-            else if (self.b_b_bb & offset) == offset { rank = format!("{}{}", " B".bright_red(),  &prev); } 
-            else if (self.b_q_bb & offset) == offset { rank = format!("{}{}", " Q".bright_red(),  &prev); } 
-            else if (self.b_k_bb & offset) == offset { rank = format!("{}{}", " K".bright_red(),  &prev); } 
-            else { rank = format!("{}{}", " ·", &prev);}
-            // println!("{}", rank.chars().count());
+            rank = match self.piece_at(offset) {
+                Some(piece) => match piece {
+                    // White Pieces
+                    (Piece::Pawn,   Colour::White) => format!("{}{}", " P".bright_blue(), &prev),
+                    (Piece::Rook,   Colour::White) => format!("{}{}", " R".bright_blue(), &prev),
+                    (Piece::Knight, Colour::White) => format!("{}{}", " N".bright_blue(), &prev),
+                    (Piece::Bishop, Colour::White) => format!("{}{}", " B".bright_blue(), &prev),
+                    (Piece::Queen,  Colour::White) => format!("{}{}", " Q".bright_blue(), &prev),
+                    (Piece::King,   Colour::White) => format!("{}{}", " K".bright_blue(), &prev),
+                    // Black Pieces
+                    (Piece::Pawn,   Colour::Black) => format!("{}{}", " P".bright_red(),  &prev),
+                    (Piece::Rook,   Colour::Black) => format!("{}{}", " R".bright_red(),  &prev),
+                    (Piece::Knight, Colour::Black) => format!("{}{}", " N".bright_red(),  &prev),
+                    (Piece::Bishop, Colour::Black) => format!("{}{}", " B".bright_red(),  &prev),
+                    (Piece::Queen,  Colour::Black) => format!("{}{}", " Q".bright_red(),  &prev),
+                    (Piece::King,   Colour::Black) => format!("{}{}", " K".bright_red(),  &prev),
+                },
+                None => format!("{}{}", " ·", &prev),
+            };
             if i % 8 == 7 {
                 print!("{}", letters.next().unwrap());
                 println!("{}", rank.as_str());

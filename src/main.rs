@@ -10,7 +10,7 @@ use game::*;
 // use position::*;
 
 fn main() {
-    let game = Game::new("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    let game = Game::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
     let bb = game.current_position().board.occupied_bb();
     println!("{}\n", pp_bb(bb));
 

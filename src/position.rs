@@ -12,7 +12,7 @@ pub enum InCheck {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Position {
     pub board: Board,
-    pub blacks_move: bool,
+    pub is_blacks_move: bool,
     // Upper nibble used for castling rights
     // Lower nibble used for temp restrictions TODO(James): check if this is even necessary 
     // KQkqKQkq :  uppercase = White, lower = Black 

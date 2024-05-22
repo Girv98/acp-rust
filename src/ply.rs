@@ -10,6 +10,11 @@ pub enum Piece {
     King,
 }
 
+pub enum Colour {
+    White = 0,
+    Black = 1
+}
+
 #[derive(Debug, Clone, Copy)]
 /// Represents a ply or turn
 pub struct Ply {
