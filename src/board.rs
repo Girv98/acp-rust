@@ -1,4 +1,6 @@
 
+use std::io::{self, Write};
+
 use colored::Colorize;
 
 use crate::core::Square;
@@ -295,7 +297,7 @@ impl Board {
         str
     }
 
-    pub fn print_board(&self, white_pov: bool) {
+    pub fn print_board(&self, white_pov: bool, sink: &mut impl Write) -> io::Result<()> {
         let mut rank = String::new();
         let mut letters = if white_pov {vec!['8', '7', '6', '5', '4', '3', '2', '1']} else {vec!['1', '2', '3', '4', '5', '6', '7', '8']}.into_iter();
         
@@ -323,15 +325,15 @@ impl Board {
                 None => format!("{}{}", " ·", &prev),
             };
             if i % 8 == 7 {
-                print!("{}", letters.next().unwrap());
-                println!("{}", rank.as_str());
+                write!(sink, "{}", letters.next().unwrap())?;
+                writeln!(sink, "{}\r", rank.as_str())?;
                 rank = "".to_string();
             }
         }
         if white_pov {
-            println!("~ A B C D E F G H");
+            writeln!(sink, "~ A B C D E F G H\r")
         } else {
-            println!("~ H G F E D C B A");
+            writeln!(sink, "~ H G F E D C B A\r")
         }
 
     }    

@@ -105,61 +105,58 @@ impl Game {
         self.history.last().expect("Game History is not empty")
     }
 
-    pub fn print_board(&self, colour: Colour) {
+    pub fn print_board(&self, sink: &mut impl Write, colour: Colour) {
         match colour {
-            Colour::White => self.last_position().board.print_board(true),
-            Colour::Black => self.last_position().board.print_board(false)
+            Colour::White => self.last_position().board.print_board(true, sink).unwrap(),
+            Colour::Black => self.last_position().board.print_board(false, sink).unwrap()
         }
     }
 
-    pub fn play_one_player(&mut self, player_colour: Colour) {
-        let _is_players_turn = match player_colour {
-            Colour::White => self.last_position().was_blacks_move,
-            Colour::Black => !self.last_position().was_blacks_move,
-        };
+    // pub fn play_one_player(&mut self, player_colour: Colour) {
+    //     let _is_players_turn = match player_colour {
+    //         Colour::White => self.last_position().was_blacks_move,
+    //         Colour::Black => !self.last_position().was_blacks_move,
+    //     };
+    //     todo!()
+    // }
 
-        todo!()
-    }
+    // fn analyse_user_input(&self, buffer: String) -> Ply {
+    //     todo!()
+    // }
 
-    fn analyse_user_input(&self, buffer: String) -> Ply {
-        todo!()
-    }
+    // pub fn play_two_player(&mut self) {
+    //     loop {
+    //         let (player, prompt) = match self.last_position().was_blacks_move {
+    //             true  => (Colour::White, "White to play: ".bright_blue()),
+    //             false => (Colour::Black, "Black to play: ".bright_red()),
+    //         };
 
-    pub fn play_two_player(&mut self) {
+    //         let mut user_buffer = String::new(); { 
+    //             self.print_board(player);
+    //             println!("\nMove: {} Ply: {}", self.mve, self.ply);
+    //             print!("{prompt}");
+    //             io::stdout().flush().unwrap();
+    //             io::stdin().read_line(&mut user_buffer).unwrap();
+    //         }
 
-        loop {
-            let (player, prompt) = match self.last_position().was_blacks_move {
-                true  => (Colour::White, "White to play: ".bright_blue()),
-                false => (Colour::Black, "Black to play: ".bright_red()),
-            };
+    //         println!("{:?}", user_buffer.chars().collect::<Vec<_>>());
+    //         println!("You typed: {user_buffer}");
 
-            let mut user_buffer = String::new(); { 
-                self.print_board(player);
-                println!("\nMove: {} Ply: {}", self.mve, self.ply);
-                print!("{prompt}");
-                io::stdout().flush().unwrap();
-                io::stdin().read_line(&mut user_buffer).unwrap();
-            }
-
-            println!("{:?}", user_buffer.chars().collect::<Vec<_>>());
-            println!("You typed: {user_buffer}");
-
-            let next_move = self.analyse_user_input(user_buffer);
-            // TODO: Do things with move
+    //         let next_move = self.analyse_user_input(user_buffer);
+    //         // TODO: Do things with move
             
-            let mut next_pos = *self.last_position();
-            next_pos.was_blacks_move = !next_pos.was_blacks_move;
-            // Update Position
-            // Update Castling
-            // Update Ply_Clock
-            // Update En_Passant_Targ
-            // Update Check
-            // Update Last_Ply
-            self.history.push(next_pos);
-            // Update Move & Ply
-            self.mve = if next_pos.was_blacks_move { self.mve + 1} else {self.mve };
-            self.ply = (self.ply % 2) + 1
-        }
-
-    }
+    //         let mut next_pos = *self.last_position();
+    //         next_pos.was_blacks_move = !next_pos.was_blacks_move;
+    //         // Update Position
+    //         // Update Castling
+    //         // Update Ply_Clock
+    //         // Update En_Passant_Targ
+    //         // Update Check
+    //         // Update Last_Ply
+    //         self.history.push(next_pos);
+    //         // Update Move & Ply
+    //         self.mve = if next_pos.was_blacks_move { self.mve + 1} else {self.mve };
+    //         self.ply = (self.ply % 2) + 1
+    //     }
+    // }
 }
