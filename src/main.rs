@@ -11,16 +11,20 @@ use game::*;
 
 fn main() {
     let game = Game::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
-    let bb = game.current_position().board.occupied_bb();
+    let bb = game.last_position().board.occupied_bb();
     println!("{}\n", pp_bb(bb));
 
-    game.current_position().board.print_board(true);
+    game.print_board(ply::Colour::White);
     println!();
-    game.current_position().board.print_board(false);
+    game.print_board(ply::Colour::Black);
     println!();
 
     println!("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
     println!("{}", game.as_fen());
 
-    println!("{:?}", Square::from_bb(game.current_position().en_passant_targ.unwrap()));
+    println!("{:?}", Square::from_bb(game.last_position().en_passant_targ.unwrap()));
+
+    let mut new_game = Game::new();
+
+    new_game.play_two_player();
 }

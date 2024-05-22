@@ -1,6 +1,9 @@
+use std::io::{self, Write};
+
+use colored::Colorize;
+
 use crate    :: {
-    core     :: { Square, INITIAL_FEN },
-    position :: Position, 
+    core     :: { Square, INITIAL_FEN }, ply::Colour, position :: Position 
 };
 
 #[derive(Debug, Default)]
@@ -15,31 +18,27 @@ impl Game {
         Self::from_fen(INITIAL_FEN)
     }
 
-    // fn init(&mut self, fen: &str) {
-    //     self.from_fen(if fen.is_empty() { INITIAL_FEN } else { fen });
-    // }
-
     pub fn as_fen(&self) -> String {
         let mut fen = String::new();
-        let pos = self.current_position();
+        let last_pos = self.last_position();
 
         { // Piece Placement
-            fen.push_str(&pos.board.stringify());
+            fen.push_str(&last_pos.board.stringify());
             fen.push(' ');
         }
         { // Active Colour
-            match pos.is_blacks_move {
-                true  => fen.push_str("b "),
-                false => fen.push_str("w "),
+            match last_pos.was_blacks_move {
+                true  => fen.push_str("w "),
+                false => fen.push_str("b "),
             }
         }
         { // Castling Rights
             let mut buf = String::with_capacity(5);
 
-            if pos.castling >> 7     == 1 { buf.push('K'); }
-            if pos.castling >> 6 & 1 == 1 { buf.push('Q'); }
-            if pos.castling >> 5 & 1 == 1 { buf.push('k'); }
-            if pos.castling >> 4 & 1 == 1 { buf.push('q'); }
+            if last_pos.castling >> 7     == 1 { buf.push('K'); }
+            if last_pos.castling >> 6 & 1 == 1 { buf.push('Q'); }
+            if last_pos.castling >> 5 & 1 == 1 { buf.push('k'); }
+            if last_pos.castling >> 4 & 1 == 1 { buf.push('q'); }
             
             if buf.is_empty() {
                 buf.push('-');
@@ -49,7 +48,7 @@ impl Game {
 
         }
         { // En Passant Target
-            match pos.en_passant_targ {
+            match last_pos.en_passant_targ {
                 Some(x) => {
                     let sq = Square::bb_to_str(x);
                     fen.push_str(sq);
@@ -61,7 +60,7 @@ impl Game {
             }
         }
         { // PLy Clock
-            fen.push_str(&pos.ply_clock.to_string());
+            fen.push_str(&last_pos.ply_clock.to_string());
             fen.push(' ');
         }
         { // Move Counter
@@ -71,77 +70,11 @@ impl Game {
     }
 
     pub fn from_fen(fen: &str) -> Self {
-        let mut game = Game::default();
+        let mut game: Game = Game::default();
+        let position = Position::from_fen(fen);
 
-        let fen_parts = fen.split(' ').collect::<Vec<_>>();
+        let fen_parts = fen.split(' ').collect::<Vec<_>>(); // FIXME: We are doing this twice with Position::from_fen
 
-        if fen_parts.len() != 6 {
-            panic!("Malformed FEN") // TODO: Return Error
-        }
-
-        let mut position = Position::new();
-
-        let mut file = 0;
-        let mut rank = 7;
-        // Piece Placement
-        for c in fen_parts[0].chars() {
-            match c {
-                '/' => {
-                    file = 0;
-                    rank -= 1;
-                },
-                '0' ..= '9' => {
-                    file += c.to_digit(10).unwrap();
-                },
-                // Black Pieces
-                'p' => { position.board.b_p_bb += 1 << (rank * 8 + file); file += 1; },
-                'r' => { position.board.b_r_bb += 1 << (rank * 8 + file); file += 1; },
-                'n' => { position.board.b_n_bb += 1 << (rank * 8 + file); file += 1; },
-                'b' => { position.board.b_b_bb += 1 << (rank * 8 + file); file += 1; },
-                'q' => { position.board.b_q_bb += 1 << (rank * 8 + file); file += 1; },
-                'k' => { position.board.b_k_bb += 1 << (rank * 8 + file); file += 1; },
-                // White Pieces
-                'P' => { position.board.w_p_bb += 1 << (rank * 8 + file); file += 1; },
-                'R' => { position.board.w_r_bb += 1 << (rank * 8 + file); file += 1; },
-                'N' => { position.board.w_n_bb += 1 << (rank * 8 + file); file += 1; },
-                'B' => { position.board.w_b_bb += 1 << (rank * 8 + file); file += 1; },
-                'Q' => { position.board.w_q_bb += 1 << (rank * 8 + file); file += 1; },
-                'K' => { position.board.w_k_bb += 1 << (rank * 8 + file); file += 1; },
-                _ => panic!("Unknown character in FEN placement data")
-            }
-        }
-        // Active Colour
-        match fen_parts[1] {
-            "w" => position.is_blacks_move = false,
-            "b" => position.is_blacks_move = true,
-            _ => panic!("Malformed FEN active colour")
-        }
-        // Castling Rights
-        match fen_parts[2] {
-            "-" => {},
-            _ => {
-                for c in fen_parts[2].chars() {
-                    match c {
-                        'K' => { position.castling |= 1 << 7 },
-                        'Q' => { position.castling |= 1 << 6 },
-                        'k' => { position.castling |= 1 << 5 },
-                        'q' => { position.castling |= 1 << 4 },
-                        _  => panic!("Unknown character in FEN castling rights")
-                    }
-                }
-            }
-        }
-        // En Passant Target
-        match Square::str_to_u8(fen_parts[3]) {
-            Some(np) => position.en_passant_targ = Some(np),
-            None if fen_parts[3] == "-" => position.en_passant_targ = None,
-            None => panic!("Malformed En Passant Target. Can be either a square (i.e. 'A6') or a dash '-' denoting that there is no valid square."),
-        }
-        // Halfmove (ply) clock (used for 50 move rule)
-        match fen_parts[4].parse() {
-            Ok(num) => position.ply_clock = num,
-            _ => panic!("Malformed FEN halfmove clock")
-        }
         // Fullmove counter 
         match fen_parts[5].parse() {
             Ok(num) => game.mve = num,
@@ -149,11 +82,9 @@ impl Game {
         }
         // Set Ply
         game.ply = game.mve * 2;
-        if !position.is_blacks_move {
+        if position.was_blacks_move {
             game.ply -= 1;
         }
-
-        // TODO(James): evaluate checks and temporary castling restrictions
 
         game.history.push(position);
 
@@ -164,11 +95,60 @@ impl Game {
         todo!()
     }
 
-    pub fn from_pgn(&mut self) {
+    pub fn from_pgn(pgn: &str) -> Self {
         todo!()
     }
 
-    pub fn current_position(&self) -> &Position {
+    pub fn last_position(&self) -> &Position {
         self.history.last().expect("Game History is not empty")
+    }
+
+    pub fn print_board(&self, colour: Colour) {
+        match colour {
+            Colour::White => self.last_position().board.print_board(true),
+            Colour::Black => self.last_position().board.print_board(false)
+        }
+    }
+
+    pub fn play_one_player(&mut self, player_colour: Colour) {
+        let _is_players_turn = match player_colour {
+            Colour::White => self.last_position().was_blacks_move,
+            Colour::Black => !self.last_position().was_blacks_move,
+        };
+
+        todo!()
+    }
+
+    pub fn play_two_player(&mut self) {
+
+        loop {
+            let (player, prompt) = match self.last_position().was_blacks_move {
+                true  => (Colour::White, "White to play: ".bright_blue()),
+                false => (Colour::Black, "Black to play: ".bright_red()),
+            };
+
+            let mut user_buffer = String::new(); { 
+                self.print_board(player);
+                println!("\nMove: {} Ply: {}", self.mve, self.ply);
+                print!("{prompt}");
+                io::stdout().flush().unwrap();
+                io::stdin().read_line(&mut user_buffer).unwrap();
+            }
+
+            println!("You typed: {user_buffer}");
+
+            
+            let mut next_pos = *self.last_position();
+            next_pos.was_blacks_move = !next_pos.was_blacks_move;
+            // Update Position
+            // Update Castling
+            // Update Ply_Clock
+            // Update En_Passant_Targ
+            // Update Check
+            // Update Last_Ply
+            self.history.push(next_pos);
+            // Update Move & Ply
+        }
+
     }
 }
