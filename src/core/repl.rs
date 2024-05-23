@@ -78,54 +78,44 @@ impl InputBuffer {
     }
 }
 
+pub enum InputType {
+    String(String),
+    Termination
+}
 
-pub fn play_two_player(game: &mut Game) {
+pub fn get_input(prompt: &ColoredString, ) -> Result<InputType, io::Error>{
     let mut stdout = io::stdout().into_raw_mode().unwrap();
+
+    write!(stdout, "{}{}", prompt, cursor::BlinkingBar).unwrap();
+    stdout.flush().unwrap();
     
-    loop {
-        let stdin = io::stdin();
+    let stdin = io::stdin();
+    let mut inp_buf = InputBuffer::default();
 
-        let (player, prompt) = match game.last_position().was_blacks_move {
-            true  => (Colour::White, "White to play: ".bright_blue()),
-            false => (Colour::Black, "Black to play: ".bright_red()),
-        };
-            
-        game.print_board(&mut stdout, player);
-        writeln!(stdout, "\nMove: {} Ply: {}\r", game.mve, game.ply).unwrap();
-        write!(stdout, "{}{}", prompt, cursor::BlinkingBar).unwrap();
-        stdout.flush().unwrap();
-
-        let mut inp_buf = InputBuffer::default();
-
-        for key in stdin.keys() {
-            match key.unwrap() {
-                Key::Home => inp_buf.jump_start(),
-                Key::End => inp_buf.jump_end(),
-                Key::Left => inp_buf.left_char(),
-                Key::Right => inp_buf.right_char(),
-                Key::Backspace => inp_buf.backspace(),
-                Key::Delete => inp_buf.delete(),
-                Key::Ctrl('c') => {
-                    write!(stdout, "^C\r\n").unwrap();
-                    return
-                },
-                Key::Char('\n') => {
-                    write!(stdout, "\r\n").unwrap();
-
-                    match inp_buf.take().as_str() {
-                        "quit" => {
-                            return
-                        },
-                        _ => todo!("parse input\r\n")
-                    }
-                },
-                Key::Char(ch) => {
-                    inp_buf.insert_char(ch)
-                },
-                _ => {}
-            }
-            inp_buf.render(&prompt, &mut stdout).unwrap();
-            stdout.flush().unwrap();
+    for key in stdin.keys() {
+        match key.unwrap() {
+            Key::Home => inp_buf.jump_start(),
+            Key::End => inp_buf.jump_end(),
+            Key::Left => inp_buf.left_char(),
+            Key::Right => inp_buf.right_char(),
+            Key::Backspace => inp_buf.backspace(),
+            Key::Delete => inp_buf.delete(),
+            Key::Ctrl('c') => {
+                write!(stdout, "^C\r\n").unwrap();
+                return Ok(InputType::Termination)
+            },
+            Key::Char('\n') => {
+                write!(stdout, "\r\n").unwrap();
+                return Ok(InputType::String(inp_buf.take()))
+            },
+            Key::Char(ch) => {
+                inp_buf.insert_char(ch)
+            },
+            _ => {}
         }
+        inp_buf.render(&prompt, &mut stdout).unwrap();
+        stdout.flush().unwrap();
     }
+
+    Ok(InputType::Termination)
 }

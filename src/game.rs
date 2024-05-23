@@ -1,11 +1,9 @@
-use std::io::{self, Write};
-
 use colored::Colorize;
 
 use crate    :: {
-    ply      :: { Colour, Ply }, 
-    core     :: { Square, INITIAL_FEN }, 
-    position :: Position, 
+    core     :: { repl::{self, InputType}, Square, INITIAL_FEN }, 
+    ply      :: Colour, 
+    position :: Position 
 };
 
 #[derive(Debug, Default)]
@@ -105,10 +103,31 @@ impl Game {
         self.history.last().expect("Game History is not empty")
     }
 
-    pub fn print_board(&self, sink: &mut impl Write, colour: Colour) {
+    pub fn print_board(&self, colour: Colour) {
         match colour {
-            Colour::White => self.last_position().board.print_board(true, sink).unwrap(),
-            Colour::Black => self.last_position().board.print_board(false, sink).unwrap()
+            Colour::White => self.last_position().board.print_board(true),
+            Colour::Black => self.last_position().board.print_board(false)
+        }
+    }
+
+
+    pub fn play_two_player(&mut self) {
+        loop {
+            let (player, prompt) = match self.last_position().was_blacks_move {
+                true  => (Colour::White, "White to play: ".bright_blue()),
+                false => (Colour::Black, "Black to play: ".bright_red()),
+            };
+                
+            self.print_board(player);
+            println!("Move: {} Ply: {}\r\n", self.mve, self.ply);
+
+            match repl::get_input(&prompt).unwrap() {
+                InputType::String(inp) => match inp.as_str() {
+                    "quit" | "exit "=> return,
+                    _ => todo!("parse input\r\n")
+                },
+                InputType::Termination => return,
+            }
         }
     }
 
