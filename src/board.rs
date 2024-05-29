@@ -27,7 +27,7 @@ impl Board {
         Board::default()
     }
     /// Gets bitboard of all unoccupied squares
-    pub fn empty_bb(&self) -> u64 {
+    pub fn unoccupied_bb(&self) -> u64 {
         !self.occupied_bb()
     }
     /// Gets bitboard of all occupied squares
@@ -53,32 +53,32 @@ impl Board {
     /// Gets bitboard of all white push squares
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_single_pushes(&self) -> u64 {
-        core::pawn_single_pushes_bb(self.w_p_bb, self.empty_bb(), true)
+        core::pawn_single_pushes_bb(self.w_p_bb, self.unoccupied_bb(), true)
     }
     /// Gets bitboard of all black push squares
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_single_pushes(&self) -> u64 {
-        core::pawn_single_pushes_bb(self.b_p_bb, self.empty_bb(), false)
+        core::pawn_single_pushes_bb(self.b_p_bb, self.unoccupied_bb(), false)
     }
     /// Gets bitboard of all white double push squares
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_double_pushes(&self) -> u64 {
-        core::pawn_double_pushes_bb(self.w_p_bb, self.empty_bb(), true)
+        core::pawn_double_pushes_bb(self.w_p_bb, self.unoccupied_bb(), true)
     }
     /// Gets bitboard of all black double push squares
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_double_pushes(&self) -> u64 {
-        core::pawn_double_pushes_bb(self.b_p_bb, self.empty_bb(), false)
+        core::pawn_double_pushes_bb(self.b_p_bb, self.unoccupied_bb(), false)
     }
     /// Gets bitboard of all possible white knight moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_knight_moves(&self) -> u64 {
-        core::knight_moves_bb(self.w_n_bb) & self.empty_bb()
+        core::knight_moves_bb(self.w_n_bb) & self.unoccupied_bb()
     }
     /// Gets bitboard of all possible black knight moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_knight_moves(&self) -> u64 {
-        core::knight_moves_bb(self.b_n_bb) & self.empty_bb()
+        core::knight_moves_bb(self.b_n_bb) & self.unoccupied_bb()
     }
     /// Gets bitboard of all black occupied squares that are under threat from white's knights
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
@@ -93,12 +93,12 @@ impl Board {
     /// Gets bitboard of all possible white king moves
     /// NOTE: Doesn't account for illegal moves
     pub fn white_king_moves(&self) -> u64 {
-        core::king_moves_bb(self.w_k_bb) & self.empty_bb()
+        core::king_moves_bb(self.w_k_bb) & self.unoccupied_bb()
     }
     /// Gets bitboard of all possible black king moves
     /// NOTE: Doesn't account for illegal moves
     pub fn black_king_moves(&self) -> u64 {
-        core::king_moves_bb(self.b_k_bb) & self.empty_bb()
+        core::king_moves_bb(self.b_k_bb) & self.unoccupied_bb()
     }
     /// Gets bitboard of all black occupied squares that are under threat from white's king
     /// NOTE: Doesn't account for illegal moves 
@@ -113,107 +113,115 @@ impl Board {
     /// Gets bitboard of all possible white bishop moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_bishop_moves(&self) -> u64 {
-        core::bish_moves_bb(self.w_b_bb, self.empty_bb()) & self.empty_bb()
+        core::bish_moves_bb(self.w_b_bb, self.unoccupied_bb()) & self.unoccupied_bb()
     }
     /// Gets bitboard of all possible black bishop moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_bishop_moves(&self) -> u64 {
-        core::bish_moves_bb(self.b_b_bb, self.empty_bb()) & self.empty_bb()
+        core::bish_moves_bb(self.b_b_bb, self.unoccupied_bb()) & self.unoccupied_bb()
     }
     /// Gets bitboard of all possible white bishop moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_bishop_attacks(&self) -> u64 {
-        core::bish_moves_bb(self.w_b_bb, self.empty_bb()) & self.black_bb()
+        core::bish_moves_bb(self.w_b_bb, self.unoccupied_bb()) & self.black_bb()
     }
     /// Gets bitboard of all possible black bishop moves.
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_bishop_attacks(&self) -> u64 {
-        core::bish_moves_bb(self.b_b_bb, self.empty_bb()) & self.white_bb()
+        core::bish_moves_bb(self.b_b_bb, self.unoccupied_bb()) & self.white_bb()
     }
     /// Gets bitboard of all possible white rook moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_rook_moves(&self) -> u64 {
-        core::rook_moves_bb(self.w_r_bb, self.empty_bb()) & self.empty_bb()
+        core::rook_moves_bb(self.w_r_bb, self.unoccupied_bb()) & self.unoccupied_bb()
     }
     /// Gets bitboard of all possible black rook moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_rook_moves(&self) -> u64 {
-        core::rook_moves_bb(self.b_r_bb, self.empty_bb()) & self.empty_bb()
+        core::rook_moves_bb(self.b_r_bb, self.unoccupied_bb()) & self.unoccupied_bb()
     }
     /// Gets bitboard of all possible white rook moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_rook_attacks(&self) -> u64 {
-        core::rook_moves_bb(self.w_r_bb, self.empty_bb()) & self.black_bb()
+        core::rook_moves_bb(self.w_r_bb, self.unoccupied_bb()) & self.black_bb()
     }
     /// Gets bitboard of all possible black rook moves.
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_rook_attacks(&self) -> u64 {
-        core::rook_moves_bb(self.b_r_bb, self.empty_bb()) & self.white_bb()
+        core::rook_moves_bb(self.b_r_bb, self.unoccupied_bb()) & self.white_bb()
     }
-    /// Gets bitboard of all possible white queen moves
+    /// Gets bitboard of all white queen moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_queen_moves(&self) -> u64 {
-          core::rook_moves_bb(self.w_q_bb, self.empty_bb())
-        | core::bish_moves_bb(self.w_q_bb, self.empty_bb()) 
-        & self.empty_bb()
+          core::rook_moves_bb(self.w_q_bb, self.unoccupied_bb())
+        | core::bish_moves_bb(self.w_q_bb, self.unoccupied_bb()) 
+        & self.unoccupied_bb()
     }
-    /// Gets bitboard of all possible black queen moves
+    /// Gets bitboard of all black queen moves
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_queen_moves(&self) -> u64 {
-          core::rook_moves_bb(self.b_q_bb, self.empty_bb())
-        | core::bish_moves_bb(self.b_q_bb, self.empty_bb()) 
-        & self.empty_bb()
+          core::rook_moves_bb(self.b_q_bb, self.unoccupied_bb())
+        | core::bish_moves_bb(self.b_q_bb, self.unoccupied_bb()) 
+        & self.unoccupied_bb()
     }
     /// Gets bitboard of all possible white queen attacks
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn white_queen_attacks(&self) -> u64 {
-          core::rook_moves_bb(self.w_q_bb, self.empty_bb())
-        | core::bish_moves_bb(self.w_q_bb, self.empty_bb()) 
+          core::rook_moves_bb(self.w_q_bb, self.unoccupied_bb())
+        | core::bish_moves_bb(self.w_q_bb, self.unoccupied_bb()) 
         & self.black_bb()
     }
     /// Gets bitboard of all possible black queen attacks
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
     pub fn black_queen_attacks(&self) -> u64 {
-          core::rook_moves_bb(self.b_q_bb, self.empty_bb())
-        | core::bish_moves_bb(self.b_q_bb, self.empty_bb()) 
+          core::rook_moves_bb(self.b_q_bb, self.unoccupied_bb())
+        | core::bish_moves_bb(self.b_q_bb, self.unoccupied_bb()) 
         & self.white_bb()
     }
-    /// Sees if a given square is under attack by any white piece
-    pub fn sq_is_attacked_by_white(&self, sq: Square) -> bool {
-        let sq = sq.to_bb();
-        ( 
-            self.white_pawn_attacks() 
-          | self.white_knight_attacks()
-          | self.white_king_attacks()
-          | self.white_bishop_attacks()
-          | self.white_rook_attacks()
-          | self.white_queen_attacks()
-        ) & sq == sq
+    /// Gets a bitboard of all squares that are threatened by white
+    /// NOTE: Doesn't include en-passant target square
+    pub fn all_white_attacks(&self) -> u64 {
+          self.white_pawn_attacks() 
+        | self.white_knight_attacks()
+        | self.white_king_attacks()
+        | self.white_bishop_attacks()
+        | self.white_rook_attacks()
+        | self.white_queen_attacks()
     }
-    /// Sees if a given square is under attack by any black piece
-    pub fn sq_is_attacked_by_black(&self, sq: Square) -> bool {
+    /// Gets a bitboard of all squares that are threatened by black
+    /// NOTE: Doesn't include en-passant target square
+    pub fn all_black_attacks(&self) -> u64 {
+          self.black_pawn_attacks() 
+        | self.black_knight_attacks()
+        | self.black_king_attacks()
+        | self.black_bishop_attacks()
+        | self.black_rook_attacks()
+        | self.black_queen_attacks()
+    }
+    /// Sees if a given (black-occupied) square is under attack by any white piece
+    pub fn piece_is_attacked_by_white(&self, sq: Square) -> bool {
+        let sq = sq.to_bb();
+        (self.all_white_attacks() & sq) == sq
+    }
+    /// Sees if a given (white-occupied) square is under attack by any black piece
+    pub fn piece_is_attacked_by_black(&self, sq: Square) -> bool {
         // Gets a mask of all the squares that black's pieces can capture 
         // and then sees if the given square is in that mask
         let sq = sq.to_bb();
-        ( 
-            self.black_pawn_attacks() 
-          | self.black_knight_attacks()
-          | self.black_king_attacks()
-          | self.black_bishop_attacks()
-          | self.black_rook_attacks()
-          | self.black_queen_attacks()
-        ) & sq == sq
+        (self.all_black_attacks() & sq) == sq
     }
-
-    pub fn is_white_king_in_check(&self) -> bool {
-        self.sq_is_attacked_by_black(Square::from_bb(self.w_k_bb))
+    /// Checks if white's king is in check. Panics if white somehow has more than one king
+    pub fn white_king_is_in_check(&self) -> bool {
+        debug_assert_eq!(self.w_k_bb.count_ones(), 1);
+        self.piece_is_attacked_by_black(Square::from_bb(self.w_k_bb))
+    } 
+    /// Checks if black's king is in check. Panics if black somehow has more than one king
+    pub fn black_king_is_in_check(&self) -> bool {
+        debug_assert_eq!(self.b_k_bb.count_ones(), 1);
+        self.piece_is_attacked_by_white(Square::from_bb(self.b_k_bb))
     } 
 
-    pub fn is_black_king_in_check(&self) -> bool {
-        self.sq_is_attacked_by_white(Square::from_bb(self.b_k_bb))
-    } 
-
-    pub fn is_piece_pinned_to_king(&self, sq: Square, is_white: bool) -> bool {
+    pub fn piece_is_pinned_to_king(&self, sq: Square, is_white: bool) -> bool {
         let _king = if is_white { self.w_k_bb } else { self.b_k_bb };
         let _square = sq.to_bb();
         todo!()
