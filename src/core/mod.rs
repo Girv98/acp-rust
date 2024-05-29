@@ -1,6 +1,7 @@
 pub mod repl;
 pub mod fill;
 pub mod utils;
+pub mod parsers;
 
 pub const INITIAL_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -55,7 +56,7 @@ pub fn pawn_attacks_bb(sq: u64, is_white: bool) -> u64 {
 }
 
 pub fn pawn_single_pushes_bb(sq:u64, empties: u64, is_white: bool) -> u64 {
-    let color: u8 = if is_white {0} else {1};
+    let color: u8 = if is_white { 0 } else { 1 };
     ( (sq << 8) >> (color << 4) ) & empties
 }
 
@@ -99,7 +100,6 @@ pub fn rook_moves_bb(sq: u64, empties: u64) -> u64 {
 /// Includes attacks
 pub fn bish_moves_bb(sq: u64, empties: u64) -> u64 {
     use fill::dumb7fill::*;
-
       bish_north_west_attacks(sq, empties)
     | bish_north_east_attacks(sq, empties)
     | bish_south_west_attacks(sq, empties)
@@ -151,6 +151,7 @@ impl Square {
         n.into()
     }
 
+    #[rustfmt::skip]
     pub fn str_to_u8(n: &str) -> Option<u64> {
         use Square::*;
         Some(1 << match n.to_lowercase().as_str() {
@@ -166,6 +167,7 @@ impl Square {
         } as u8 )
     }
 
+    #[rustfmt::skip]
     pub fn bb_to_str(n: u64) -> &'static str {
         let sq = Self::from_bb(n);
         use Square::*;

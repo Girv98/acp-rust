@@ -1,21 +1,24 @@
 use colored::Colorize;
 
 use crate    :: {
-    core     :: { repl::{self, InputType}, Square, INITIAL_FEN }, 
-    ply      :: Colour, 
-    position :: Position 
+    position :: Position, 
+    ply      :: { Colour, Piece, Ply, Movement, PromotablePiece }, 
+    core     :: { 
+        repl :: { self, InputType }, 
+        parsers, Square, INITIAL_FEN,
+    }, 
 };
 
 #[derive(Debug, Default)]
 pub struct Game {
     pub history: Vec<Position>,
     pub ply: u16,
-    pub mve: u16,
+    pub mov: u16,
 }
 
 impl Game {
     pub fn new() -> Self {
-        Self::from_fen(INITIAL_FEN)
+        Self::try_from_fen(INITIAL_FEN).expect("INITIAL_FEN is not malformed")
     }
 
     pub fn as_fen(&self) -> String {
@@ -45,7 +48,6 @@ impl Game {
             }
             buf.push(' ');
             fen.push_str(&buf);
-
         }
         { // En Passant Target
             match last_pos.en_passant_targ {
@@ -64,31 +66,13 @@ impl Game {
             fen.push(' ');
         }
         { // Move Counter
-            fen.push_str(&self.mve.to_string());
+            fen.push_str(&self.mov.to_string());
         }
         fen
     }
 
-    pub fn from_fen(fen: &str) -> Self {
-        let mut game: Game = Game::default();
-        let position = Position::from_fen(fen);
-
-        let fen_parts = fen.split(' ').collect::<Vec<_>>(); // FIXME: We are doing this twice with Position::from_fen
-
-        // Fullmove counter 
-        match fen_parts[5].parse() {
-            Ok(num) => game.mve = num,
-            _ => panic!("Malformed FEN fullmoves")
-        }
-        // Set Ply
-        game.ply = game.mve * 2;
-        if position.was_blacks_move {
-            game.ply -= 1;
-        }
-
-        game.history.push(position);
-
-        game
+    pub fn try_from_fen(fen: &str) -> Result<Self, String> {
+        parsers::fen::parse_fen(fen)
     }
 
     pub fn as_pgn(&self) -> String {
@@ -110,6 +94,9 @@ impl Game {
         }
     }
 
+    pub fn print_help() {
+        println!("TODO\n");
+    }
 
     pub fn play_two_player(&mut self) {
         loop {
@@ -119,63 +106,152 @@ impl Game {
             };
                 
             self.print_board(player);
-            println!("Move: {} Ply: {}\r\n", self.mve, self.ply);
+            println!("Move: {} Ply: {}\r\n", self.mov, self.ply);
 
-            match repl::get_input(&prompt).unwrap() {
-                InputType::String(inp) => match inp.as_str() {
-                    "quit" | "exit "=> return,
-                    _ => todo!("parse input\r\n")
+            let usr_input = match repl::get_input(&prompt).unwrap() {
+                InputType::String(inp) => match inp.to_lowercase().trim() {
+                    "" => unreachable!(),
+                    "quit" | "exit" => return,
+                    "help" | "-h" => {
+                        Self::print_help();
+                        continue;
+                    },
+                    "draw" => { 
+                        todo!() 
+                    },
+                    "surrender" | "surr" | "sur" => { 
+                        todo!() 
+                    },
+                    _ => inp,
                 },
                 InputType::Termination => return,
+            };
+
+            let Some(mov) = self.parse_user_input(player, &usr_input).unwrap() else {
+                println!("Move not valid");
+                continue;
+            };
+            if !self.validate_user_input(mov) {
+                println!("Move not possible");
+                continue;
+            }
+
+            if self.update(mov).is_err() {
+                break
             }
         }
     }
 
-    // pub fn play_one_player(&mut self, player_colour: Colour) {
-    //     let _is_players_turn = match player_colour {
-    //         Colour::White => self.last_position().was_blacks_move,
-    //         Colour::Black => !self.last_position().was_blacks_move,
-    //     };
-    //     todo!()
-    // }
+    pub fn promote(&mut self, ply: Ply) -> Option<Ply> {
+        let mut ply = ply;
 
-    // fn analyse_user_input(&self, buffer: String) -> Ply {
-    //     todo!()
-    // }
+        let prompt = match ply.mov.player {
+            Colour::White => "Promote to what? (q/b/n/r): ".bright_blue(),
+            Colour::Black => "Promote to what? (q/b/n/r): ".bright_red(),
+        };
 
-    // pub fn play_two_player(&mut self) {
-    //     loop {
-    //         let (player, prompt) = match self.last_position().was_blacks_move {
-    //             true  => (Colour::White, "White to play: ".bright_blue()),
-    //             false => (Colour::Black, "Black to play: ".bright_red()),
-    //         };
+        match repl::get_input(&prompt).unwrap() {
+            InputType::String(inp) => match inp.to_lowercase().as_str() {
+                "quit" | "exit" => return None,
+                "q" => {
+                    ply.promotion = Some(PromotablePiece::Queen);
+                    // todo
+                },
+                "b" => {
+                    ply.promotion = Some(PromotablePiece::Bishop);
+                    // todo
+                }
+                "n" => {
+                    ply.promotion = Some(PromotablePiece::Knight);
+                    // todo
+                },
+                "r" => {
+                    ply.promotion = Some(PromotablePiece::Rook);
+                    // todo
+                },
+                _ => todo!(),
+            },
+            InputType::Termination => return None,
+        }
+        Some(ply)
+    }
 
-    //         let mut user_buffer = String::new(); { 
-    //             self.print_board(player);
-    //             println!("\nMove: {} Ply: {}", self.mve, self.ply);
-    //             print!("{prompt}");
-    //             io::stdout().flush().unwrap();
-    //             io::stdin().read_line(&mut user_buffer).unwrap();
-    //         }
+    fn update(&mut self, next_move: Movement) -> Result<(),()> {
+        // Note: Assumes move has been validated
+        let mut pos = self.last_position().clone();
+        // Update Position, promote PLyMove to Ply by checking is_capture/is_promotion
+        let ply = Ply::from_move(next_move, false, None);
+        // check capture
+        let ply = self.promote(ply).ok_or(())?;
+        // Update Castling
+        // Update Ply_Clock
+        // Update En_Passant_Targ
+        // Update Check
+        
+        // Update Last_Ply
+        pos.last_ply = Some(ply);
 
-    //         println!("{:?}", user_buffer.chars().collect::<Vec<_>>());
-    //         println!("You typed: {user_buffer}");
+        self.mov = if pos.was_blacks_move { self.mov + 1} else { self.mov };
+        self.ply = (self.ply % 2) + 1;
+        self.history.push(pos);
 
-    //         let next_move = self.analyse_user_input(user_buffer);
-    //         // TODO: Do things with move
-            
-    //         let mut next_pos = *self.last_position();
-    //         next_pos.was_blacks_move = !next_pos.was_blacks_move;
-    //         // Update Position
-    //         // Update Castling
-    //         // Update Ply_Clock
-    //         // Update En_Passant_Targ
-    //         // Update Check
-    //         // Update Last_Ply
-    //         self.history.push(next_pos);
-    //         // Update Move & Ply
-    //         self.mve = if next_pos.was_blacks_move { self.mve + 1} else {self.mve };
-    //         self.ply = (self.ply % 2) + 1
-    //     }
-    // }
+        Ok(())
+    }
+
+    fn parse_user_input(&self, player: Colour, inp: &str) -> Result<Option<Movement>, String> {
+        // parse input i.e. e4
+        // find corresponding piece i.e. e-pawn
+        // return 
+
+        let inp = inp.to_lowercase();
+        let mut chars = inp.chars().peekable();
+
+        let piece = match chars.next().expect("inp has at least one char") {
+            'n' => Piece::Knight,
+            'b' => match chars.peek() {
+                Some('1'..='8') => Piece::Pawn,
+                Some(_) => Piece::Bishop,
+                _ => Piece::Bishop
+            },
+            'r' => Piece::Rook,
+            'q' => Piece::Queen,
+            'k' => Piece::King,
+            'a'..='h' => Piece::Pawn,
+            c => return Err(format!("Unknown char: '{}'", c))
+        };
+
+        match chars.peek() {
+            Some('x') => {
+                chars.next();
+            },
+            None => return Err(format!("No more chars")),
+            _ => {},
+        }
+
+        let pos = match chars.next() {
+            Some(file @ 'a'..='h') => match chars.next() {
+                Some(rank @ '1'..='8') => {
+                    format!("{file}{rank}")
+                },
+                None => return Err(format!("No more chars")),
+                Some(c) => return Err(format!("aUnknown char: '{}'", c))
+            },
+            None => return Err(format!("No more chars")),
+            Some(c) => return Err(format!("bUnknown char: '{}'", c))
+        };
+
+        println!("P: {piece:?}\nM: {pos}");
+
+        // if 
+
+        // for c in inp.chars() {
+
+        // }
+
+        todo!()
+    }
+
+    fn validate_user_input(&self, inp: Movement) -> bool {
+        todo!()
+    }
 }
