@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::io;
 
@@ -5,6 +6,7 @@ use colored::ColoredString;
 use termion::clear;
 use termion::cursor;
 
+use termion::cursor::DetectCursorPos;
 use termion::event::Key;
 use termion::raw::IntoRawMode;
 use termion::input::TermRead;
@@ -30,6 +32,10 @@ impl InputBuffer {
 
     pub fn is_only_whitespace(&self) -> bool {
         self.buffer.iter().collect::<String>().trim() == ""
+    }
+
+    pub fn is_in_responses(&self, responses: &HashMap<&str, &str>) -> bool {
+        responses.contains_key(self.buffer.iter().collect::<String>().to_lowercase().trim())
     }
 
     pub fn insert_char(&mut self, ch: char) {
@@ -70,20 +76,32 @@ impl InputBuffer {
         }
     }
 
-    pub fn render(&self, prompt: &ColoredString, sink: &mut impl Write) -> io::Result<()> {
+    pub fn render(&self, prompt: &ColoredString, responses: &HashMap<&str, &str>, sink: &mut impl Write) -> io::Result<()> {
         let buf: String = self.buffer.iter().collect();
         write!(sink, "\r{}{}{}\r", clear::AfterCursor, prompt, &buf)?;
+
+        if let Some (resp) = responses.get(buf.to_lowercase().trim()) {
+            // protects against wrapping
+            let (x, _) = termion::terminal_size()?;
+            write!(sink, "\n{}\r{}", resp, cursor::Up(1 + resp.chars().count() as u16 / x))?;
+        }
+
         write!(sink,"{}", cursor::Right((prompt.len() + self.cursor).try_into().unwrap()))?;
         Ok(())
     }
 }
+
+// [123456789]
+//  12121212
+// 
+// 
 
 pub enum InputType {
     String(String),
     Termination
 }
 
-pub fn get_input(prompt: &ColoredString, ) -> Result<InputType, io::Error>{
+pub fn get_input(prompt: &ColoredString, responses: &HashMap<&str, &str>) -> Result<InputType, io::Error> {
     let mut stdout = io::stdout().into_raw_mode().unwrap();
     write!(stdout, "{}{}", prompt, cursor::BlinkingBar).unwrap();
     stdout.flush().unwrap();
@@ -103,7 +121,7 @@ pub fn get_input(prompt: &ColoredString, ) -> Result<InputType, io::Error>{
                 write!(stdout, "^C\r\n").unwrap();
                 return Ok(InputType::Termination)
             },
-            Key::Char('\n')  => if !inp_buf.buffer.is_empty() && ! inp_buf.is_only_whitespace() {
+            Key::Char('\n') => if !inp_buf.buffer.is_empty() && ! inp_buf.is_only_whitespace() && !inp_buf.is_in_responses(responses) {
                 write!(stdout, "\r\n").unwrap();
                 return Ok(InputType::String(inp_buf.take()))
             },
@@ -112,7 +130,7 @@ pub fn get_input(prompt: &ColoredString, ) -> Result<InputType, io::Error>{
             },
             _ => {}
         }
-        inp_buf.render(&prompt, &mut stdout).unwrap();
+        inp_buf.render(&prompt, responses,&mut stdout).unwrap();
         stdout.flush().unwrap();
     }
 

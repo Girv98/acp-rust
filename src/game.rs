@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use colored::Colorize;
 
 use crate    :: {
@@ -99,6 +101,11 @@ impl Game {
     }
 
     pub fn play_two_player(&mut self) {
+
+        let asdf = HashMap::from(
+            [("draw", "Must make a move before offering a draw")],
+        );
+
         loop {
             let (player, prompt) = match self.last_position().was_blacks_move {
                 true  => (Colour::White, "White to play: ".bright_blue()),
@@ -108,19 +115,37 @@ impl Game {
             self.print_board(player);
             println!("Move: {} Ply: {}\r\n", self.mov, self.ply);
 
-            let usr_input = match repl::get_input(&prompt).unwrap() {
+            let usr_input = match repl::get_input(&prompt, &asdf).unwrap() {
                 InputType::String(inp) => match inp.to_lowercase().trim() {
                     "" => unreachable!(),
                     "quit" | "exit" => return,
                     "help" | "-h" => {
                         Self::print_help();
-                        continue;
+                        continue
                     },
                     "draw" => { 
-                        todo!() 
+                        // let (_nxt_player, prompt) = match player {
+                        //     Colour::White => (Colour::Black, "Black: Do you except a draw? (y/n) ".bright_red()),
+                        //     Colour::Black => (Colour::White, "White: Do you except a draw? (y/n) ".bright_blue()),
+                        // };
+
+                        // match repl::get_input(&prompt).unwrap() {
+                        //     InputType::String(inp) => match inp.to_lowercase().trim() {
+                        //         "y" | "yes" => println!("Draw"),
+                        //         "n" | "no"  => continue,
+                        //         _ => continue
+                        //     },
+                        //     InputType::Termination => return
+                        // }
+                        // return
+                        unreachable!()
                     },
                     "surrender" | "surr" | "sur" => { 
-                        todo!() 
+                        match player {
+                            Colour::White => println!("Black wins by surrender"),
+                            Colour::Black => println!("White wins by surrender"),
+                        }
+                        return
                     },
                     _ => inp,
                 },
@@ -150,7 +175,7 @@ impl Game {
             Colour::Black => "Promote to what? (q/b/n/r): ".bright_red(),
         };
 
-        match repl::get_input(&prompt).unwrap() {
+        match repl::get_input(&prompt, &HashMap::new()).unwrap() {
             InputType::String(inp) => match inp.to_lowercase().as_str() {
                 "quit" | "exit" => return None,
                 "q" => {
