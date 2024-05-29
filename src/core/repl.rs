@@ -1,9 +1,7 @@
 use std::io::Write;
 use std::io;
-use std::fmt;
 
 use colored::ColoredString;
-use colored::Colorize;
 use termion::clear;
 use termion::cursor;
 
@@ -11,8 +9,6 @@ use termion::event::Key;
 use termion::raw::IntoRawMode;
 use termion::input::TermRead;
 
-use crate::ply::Colour;
-use crate::Game;
 
 #[derive(Default)]
 struct InputBuffer {
@@ -27,9 +23,13 @@ impl InputBuffer {
     }
 
     pub fn take(&mut self) -> String {
-        let result = self.buffer.iter().collect();
+        let res = self.buffer.iter().collect();
         self.clear();
-        result
+        res
+    }
+
+    pub fn is_only_whitespace(&self) -> bool {
+        self.buffer.iter().collect::<String>().trim() == ""
     }
 
     pub fn insert_char(&mut self, ch: char) {
@@ -85,7 +85,6 @@ pub enum InputType {
 
 pub fn get_input(prompt: &ColoredString, ) -> Result<InputType, io::Error>{
     let mut stdout = io::stdout().into_raw_mode().unwrap();
-
     write!(stdout, "{}{}", prompt, cursor::BlinkingBar).unwrap();
     stdout.flush().unwrap();
     
@@ -104,7 +103,7 @@ pub fn get_input(prompt: &ColoredString, ) -> Result<InputType, io::Error>{
                 write!(stdout, "^C\r\n").unwrap();
                 return Ok(InputType::Termination)
             },
-            Key::Char('\n') => {
+            Key::Char('\n')  => if !inp_buf.buffer.is_empty() && ! inp_buf.is_only_whitespace() {
                 write!(stdout, "\r\n").unwrap();
                 return Ok(InputType::String(inp_buf.take()))
             },
