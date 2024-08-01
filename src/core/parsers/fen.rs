@@ -63,7 +63,7 @@ pub fn parse_fen(fen: &str) -> Result<Game, String> {
         }
     }
     // En Passant Target
-    match Square::str_to_u8(fen_parts[3]) {
+    match Square::str_to_bb(fen_parts[3]) {
         Some(np) => position.en_passant_targ = Some(np),
         None if fen_parts[3] == "-" => position.en_passant_targ = None,
         None => return Err ("Malformed En Passant Target. Can be either a square (i.e. 'A6') or a dash '-' denoting that there is no valid square.".to_string()),
