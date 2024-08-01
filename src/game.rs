@@ -11,11 +11,35 @@ use crate    :: {
     }, 
 };
 
+#[derive(Debug)]
+pub enum DrawKind {
+    Stalemate,
+    Mutual,
+    ThreeFold,
+    FiveFold,
+    FiftyMove,
+}
+
+#[derive(Debug)]
+pub enum WinKind {
+    Surrender,
+    Checkmate
+}
+
+#[derive(Debug)]
+pub enum State {
+    White(WinKind),
+    Black(WinKind),
+    Draw(DrawKind),
+    Terminated
+}
+
 #[derive(Debug, Default)]
 pub struct Game {
     pub history: Vec<Position>,
     pub ply: u16,
     pub mov: u16,
+    pub state: Option<State>
 }
 
 impl Game {
@@ -89,10 +113,10 @@ impl Game {
         self.history.last().expect("Game History is not empty")
     }
 
-    pub fn print_board(&self, colour: Colour) {
+    pub fn stringify_board(&self, colour: Colour) -> String {
         match colour {
-            Colour::White => self.last_position().board.print_board(true),
-            Colour::Black => self.last_position().board.print_board(false)
+            Colour::White => self.last_position().board.get_board(true),
+            Colour::Black => self.last_position().board.get_board(false)
         }
     }
 
@@ -102,20 +126,16 @@ impl Game {
 
     pub fn play_two_player(&mut self) {
 
-        let asdf = HashMap::from(
-            [("draw", "Must make a move before offering a draw")],
-        );
-
-        loop {
+        while self.state.is_none() {
             let (player, prompt) = match self.last_position().was_blacks_move {
                 true  => (Colour::White, "White to play: ".bright_blue()),
                 false => (Colour::Black, "Black to play: ".bright_red()),
             };
                 
-            self.print_board(player);
-            println!("Move: {} Ply: {}\r\n", self.mov, self.ply);
+            // self.get_board(player);
+            // println!("Move: {} Ply: {}\r\n", self.mov, self.ply);
 
-            let usr_input = match repl::get_input(&prompt, &asdf).unwrap() {
+            let usr_input = match repl::get_input(&self, player, &prompt).unwrap() {
                 InputType::String(inp) => match inp.to_lowercase().trim() {
                     "" => unreachable!(),
                     "quit" | "exit" => return,
@@ -142,10 +162,16 @@ impl Game {
                     },
                     "surrender" | "surr" | "sur" => { 
                         match player {
-                            Colour::White => println!("Black wins by surrender"),
-                            Colour::Black => println!("White wins by surrender"),
+                            Colour::White => {
+                                println!("Black wins by surrender");
+                                self.state = Some(State::Black(WinKind::Surrender));
+                            },
+                            Colour::Black => {
+                                println!("White wins by surrender");
+                                self.state = Some(State::White(WinKind::Surrender));
+                            },
                         }
-                        return
+                        break
                     },
                     _ => inp,
                 },
@@ -156,7 +182,7 @@ impl Game {
                 println!("Move not valid");
                 continue;
             };
-            if !self.validate_user_input(mov) {
+            if self.validate_movement(mov).is_none() {
                 println!("Move not possible");
                 continue;
             }
@@ -175,7 +201,7 @@ impl Game {
             Colour::Black => "Promote to what? (q/b/n/r): ".bright_red(),
         };
 
-        match repl::get_input(&prompt, &HashMap::new()).unwrap() {
+        match repl::get_input(&self, ply.mov.player, &prompt).unwrap() {
             InputType::String(inp) => match inp.to_lowercase().as_str() {
                 "quit" | "exit" => return None,
                 "q" => {
@@ -228,6 +254,10 @@ impl Game {
         // find corresponding piece i.e. e-pawn
         // return 
 
+        // Pe4  => E Pawn to e4
+        // Pexd => E Pawn captures d side
+        // K b1 c3 => Knight B1 to C3
+
         let inp = inp.to_lowercase();
         let mut chars = inp.chars().peekable();
 
@@ -276,7 +306,7 @@ impl Game {
         todo!()
     }
 
-    fn validate_user_input(&self, inp: Movement) -> bool {
+    pub fn validate_movement(&self, inp: Movement) -> Option<Ply> {
         todo!()
     }
 }
