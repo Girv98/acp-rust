@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::core::Square;
 
 #[derive(Debug, Clone, Copy)]
@@ -10,6 +12,19 @@ pub enum Piece {
     King,
 }
 
+impl Display for Piece {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Piece::Pawn => write!(f, "Pawn"),
+            Piece::Knight => write!(f,"Knight"),
+            Piece::Bishop => write!(f,"Bishop"),
+            Piece::Rook => write!(f,"Rook"),
+            Piece::Queen => write!(f,"Queen"),
+            Piece::King => write!(f, "King"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum PromotablePiece {
     Knight,
@@ -18,7 +33,7 @@ pub enum PromotablePiece {
     Queen
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Colour {
     White,
     Black
