@@ -467,10 +467,7 @@ impl Board {
             },
             None => todo!(),
         };
-
-        println!("{moves:b}");
         
-
         let mut board = String::new();
 
         let mut rank = String::new();
@@ -491,14 +488,14 @@ impl Board {
                     (Piece::King,   Colour::White) => format!("{}{}", if offset & attacks != 0 {" K".black().on_bright_red()} else {" K".bright_blue()}, &prev),
                     // Black Pieces
                     (Piece::Pawn,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" P".black().on_bright_blue()} else {" P".bright_red()},  &prev),
-                    (Piece::Rook,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" R".black().on_bright_blue()} else {" P".bright_red()},  &prev),
-                    (Piece::Knight, Colour::Black) => format!("{}{}", if offset & attacks != 0 {" N".black().on_bright_blue()} else {" P".bright_red()},  &prev),
-                    (Piece::Bishop, Colour::Black) => format!("{}{}", if offset & attacks != 0 {" B".black().on_bright_blue()} else {" P".bright_red()},  &prev),
-                    (Piece::Queen,  Colour::Black) => format!("{}{}", if offset & attacks != 0 {" Q".black().on_bright_blue()} else {" P".bright_red()},  &prev),
-                    (Piece::King,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" K".black().on_bright_blue()} else {" P".bright_red()},  &prev),
+                    (Piece::Rook,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" R".black().on_bright_blue()} else {" R".bright_red()},  &prev),
+                    (Piece::Knight, Colour::Black) => format!("{}{}", if offset & attacks != 0 {" N".black().on_bright_blue()} else {" N".bright_red()},  &prev),
+                    (Piece::Bishop, Colour::Black) => format!("{}{}", if offset & attacks != 0 {" B".black().on_bright_blue()} else {" B".bright_red()},  &prev),
+                    (Piece::Queen,  Colour::Black) => format!("{}{}", if offset & attacks != 0 {" Q".black().on_bright_blue()} else {" Q".bright_red()},  &prev),
+                    (Piece::King,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" K".black().on_bright_blue()} else {" K".bright_red()},  &prev),
                 },
-                None => if (offset & moves) != 0  {
-                    format!("{}{}", " ·".on_green(), &prev)
+                None => if offset & moves != 0  {
+                    format!("{}{}", " ·".on_green().black(), &prev)
                 } else {
                     format!("{}{}", " ·", &prev)
                 },
