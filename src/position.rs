@@ -1,7 +1,7 @@
 
 use crate :: { 
     board :: *,
-    ply   :: { Ply, Movement },
+    ply   :: { Colour, Movement, Ply },
 };
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -29,6 +29,20 @@ pub struct Position {
 impl Position {
     pub fn new() -> Self {
         Position::default()
+    }
+
+    pub fn colour_can_long_castle(&self, colour: Colour) -> bool {
+        match colour {
+            Colour::White => 1 << 6 & self.castling != 0 && 1 << 2 & self.castling == 0,
+            Colour::Black => 1 << 4 & self.castling != 0 && 1 << 0 & self.castling == 0,
+        }
+    }
+
+    pub fn colour_can_short_castle(&self, colour: Colour) -> bool{
+        match colour {
+            Colour::White => 1 << 7 & self.castling != 0 && 1 << 3 & self.castling == 0,
+            Colour::Black => 1 << 5 & self.castling != 0 && 1 << 1 & self.castling == 0,
+        }
     }
 
     pub fn analyse_move(ply: Movement) -> Ply {
