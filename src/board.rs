@@ -451,7 +451,7 @@ impl Board {
     } 
 
     pub fn get_possible_moves_board(&self, white_pov: bool, sq: Square) -> String {
-        // FIXME: Doesn't filter illegal moves or pinned pieces
+        // FIXME: Doesn't (currently) filter illegal moves or pinned pieces
         // NOTE: Assumes sq is valid
 
         let sq = sq.as_bb();
@@ -465,7 +465,7 @@ impl Board {
                 Piece::Queen  => (self.queen_attacks(sq, c),  self.queen_moves(sq)),
                 Piece::King   => (self.king_attacks(sq, c),   self.king_moves(sq)),
             },
-            None => todo!(),
+            None => (0, 0),
         };
         
         let mut board = String::new();
