@@ -3,7 +3,7 @@ use colored::Colorize;
 
 use crate::core::Square;
 use crate::core;
-use crate::ply::{Colour, Piece};
+use crate::ply::{Colour, Piece, Ply};
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Board {
@@ -42,161 +42,218 @@ impl Board {
     pub fn black_bb(&self) -> u64 {
         self.b_p_bb | self.b_r_bb | self.b_n_bb | self.b_b_bb | self.b_q_bb | self.b_k_bb
     }
-    /// Gets bitboard of all black occupied squares that are under threat from white's pawns
-    pub fn white_pawn_attacks(&self) -> u64 {
-        core::pawn_attacks_bb(self.w_p_bb, true) & self.black_bb()
-    }
-    /// Gets bitboard of all white occupied squares that are under threat from black's pawns
-    pub fn black_pawn_attacks(&self) -> u64 {
-        core::pawn_attacks_bb(self.b_p_bb, false) & self.white_bb()
-    }
-    /// Gets bitboard of all white push squares
+
+    /// Gets bitboard of all push squares of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_single_pushes(&self) -> u64 {
-        core::pawn_single_pushes_bb(self.w_p_bb, self.unoccupied_bb(), true)
+    pub fn all_pawn_single_pushes(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.pawn_single_push(sq, colour)
     }
-    /// Gets bitboard of all black push squares
+    /// Gets bitboard of all double push squares of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_single_pushes(&self) -> u64 {
-        core::pawn_single_pushes_bb(self.b_p_bb, self.unoccupied_bb(), false)
+    pub fn all_pawn_double_pushes(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.pawn_double_push(sq, colour)
     }
-    /// Gets bitboard of all white double push squares
+    /// Gets bitboard of all occupied squares that are under threat from a given colour's pawns
+    pub fn all_pawn_attacks(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.pawn_attacks(sq, colour)
+    }
+    pub fn pawn_single_push(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::pawn_single_pushes_bb(sq, self.unoccupied_bb(), true),
+            Colour::Black => core::pawn_single_pushes_bb(sq, self.unoccupied_bb(), false),
+        }
+    }
+    pub fn pawn_double_push(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::pawn_double_pushes_bb(sq, self.unoccupied_bb(), true),
+            Colour::Black => core::pawn_double_pushes_bb(sq, self.unoccupied_bb(), false),
+        }
+    }
+    pub fn pawn_attacks(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::pawn_attacks_bb(sq, true) & self.black_bb(),
+            Colour::Black => core::pawn_attacks_bb(sq, false) & self.white_bb(),
+        }
+    }
+    
+    /// Gets bitboard of all possible knight moves of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_double_pushes(&self) -> u64 {
-        core::pawn_double_pushes_bb(self.w_p_bb, self.unoccupied_bb(), true)
+    pub fn all_knight_moves(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.knight_moves(sq)
     }
-    /// Gets bitboard of all black double push squares
+    /// Gets bitboard of all occupied squares that are under threat from a given colour's knights
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_double_pushes(&self) -> u64 {
-        core::pawn_double_pushes_bb(self.b_p_bb, self.unoccupied_bb(), false)
+    pub fn all_knight_attacks(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.knight_attacks(sq, colour)
     }
-    /// Gets bitboard of all possible white knight moves
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_knight_moves(&self) -> u64 {
-        core::knight_moves_bb(self.w_n_bb) & self.unoccupied_bb()
+    pub fn knight_moves(&self, sq: u64) -> u64 {
+        core::knight_moves_bb(sq) & self.unoccupied_bb()
     }
-    /// Gets bitboard of all possible black knight moves
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_knight_moves(&self) -> u64 {
-        core::knight_moves_bb(self.b_n_bb) & self.unoccupied_bb()
+    pub fn knight_attacks(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::knight_moves_bb(sq) & self.black_bb(),
+            Colour::Black => core::knight_moves_bb(sq) & self.white_bb(),
+        }
     }
-    /// Gets bitboard of all black occupied squares that are under threat from white's knights
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_knight_attacks(&self) -> u64 {
-        core::knight_moves_bb(self.w_n_bb) & self.black_bb()
-    }
-    /// Gets bitboard of all white occupied squares that are under threat from black's knights
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_knight_attacks(&self) -> u64 {
-        core::knight_moves_bb(self.b_n_bb) & self.white_bb()
-    }
-    /// Gets bitboard of all possible white king moves
+
+    /// Gets bitboard of all possible king moves of a given colour
     /// NOTE: Doesn't account for illegal moves
-    pub fn white_king_moves(&self) -> u64 {
-        core::king_moves_bb(self.w_k_bb) & self.unoccupied_bb()
+    pub fn all_king_moves(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.king_moves(sq)
     }
-    /// Gets bitboard of all possible black king moves
-    /// NOTE: Doesn't account for illegal moves
-    pub fn black_king_moves(&self) -> u64 {
-        core::king_moves_bb(self.b_k_bb) & self.unoccupied_bb()
-    }
-    /// Gets bitboard of all black occupied squares that are under threat from white's king
+    /// Gets bitboard of all occupied squares that are under threat from a given colour's king
     /// NOTE: Doesn't account for illegal moves 
-    pub fn white_king_attacks(&self) -> u64 {
-        core::king_moves_bb(self.w_k_bb) & self.black_bb()
+    pub fn all_king_attacks(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.king_attacks(sq, colour)
     }
-    /// Gets bitboard of all white occupied squares that are under threat from black's king
-    /// NOTE: Doesn't account for illegal moves
-    pub fn black_king_attacks(&self) -> u64 {
-        core::king_moves_bb(self.b_k_bb) & self.black_bb()
+    pub fn king_moves(&self, sq: u64) -> u64 {
+       core::king_moves_bb(sq) & self.unoccupied_bb()
     }
-    /// Gets bitboard of all possible white bishop moves
+    pub fn king_attacks(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::king_moves_bb(sq) & self.black_bb(),
+            Colour::Black => core::king_moves_bb(sq) & self.white_bb(),
+        }
+    }
+
+    /// Gets bitboard of all possible bishop moves of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_bishop_moves(&self) -> u64 {
-        core::bish_moves_bb(self.w_b_bb, self.unoccupied_bb()) & self.unoccupied_bb()
+    pub fn all_bishop_moves(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.bishop_moves(sq)
     }
-    /// Gets bitboard of all possible black bishop moves
+    /// Gets bitboard of all possible bishop attacks of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_bishop_moves(&self) -> u64 {
-        core::bish_moves_bb(self.b_b_bb, self.unoccupied_bb()) & self.unoccupied_bb()
+    pub fn all_bishop_attacks(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.bishop_attacks(sq, colour)
     }
-    /// Gets bitboard of all possible white bishop moves
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_bishop_attacks(&self) -> u64 {
-        core::bish_moves_bb(self.w_b_bb, self.unoccupied_bb()) & self.black_bb()
+    pub fn bishop_moves(&self, sq: u64) -> u64 {
+        core::bish_moves_bb(sq, self.unoccupied_bb()) & self.unoccupied_bb()  
     }
-    /// Gets bitboard of all possible black bishop moves.
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_bishop_attacks(&self) -> u64 {
-        core::bish_moves_bb(self.b_b_bb, self.unoccupied_bb()) & self.white_bb()
+    pub fn bishop_attacks(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::bish_moves_bb(sq, self.unoccupied_bb()) & self.black_bb(),
+            Colour::Black => core::bish_moves_bb(sq, self.unoccupied_bb()) & self.white_bb(),
+        }
     }
-    /// Gets bitboard of all possible white rook moves
+
+    /// Gets bitboard of all possible rook moves of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_rook_moves(&self) -> u64 {
-        core::rook_moves_bb(self.w_r_bb, self.unoccupied_bb()) & self.unoccupied_bb()
+    pub fn all_rook_moves(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.rook_moves(sq)
+
     }
-    /// Gets bitboard of all possible black rook moves
+    /// Gets bitboard of all possible rook attacks of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_rook_moves(&self) -> u64 {
-        core::rook_moves_bb(self.b_r_bb, self.unoccupied_bb()) & self.unoccupied_bb()
+    pub fn all_rook_attacks(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.rook_attacks(sq, colour)
     }
-    /// Gets bitboard of all possible white rook moves
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_rook_attacks(&self) -> u64 {
-        core::rook_moves_bb(self.w_r_bb, self.unoccupied_bb()) & self.black_bb()
+    pub fn rook_moves(&self, sq: u64) -> u64 {
+        core::rook_moves_bb(sq, self.unoccupied_bb()) & self.unoccupied_bb()
     }
-    /// Gets bitboard of all possible black rook moves.
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_rook_attacks(&self) -> u64 {
-        core::rook_moves_bb(self.b_r_bb, self.unoccupied_bb()) & self.white_bb()
+    pub fn rook_attacks(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::rook_moves_bb(sq, self.unoccupied_bb()) & self.black_bb(),
+            Colour::Black => core::rook_moves_bb(sq, self.unoccupied_bb()) & self.white_bb(),
+        }
     }
-    /// Gets bitboard of all white queen moves
+
+    /// Gets bitboard of all queen moves of a given colour
     /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_queen_moves(&self) -> u64 {
-          core::rook_moves_bb(self.w_q_bb, self.unoccupied_bb())
-        | core::bish_moves_bb(self.w_q_bb, self.unoccupied_bb()) 
+    pub fn all_queen_moves(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.queen_moves(sq)
+    }
+    /// Gets bitboard of all possible queen attacks of a given colour
+    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
+    pub fn all_queen_attacks(&self, colour: Colour) -> u64 {
+        let sq = match colour {
+            Colour::White => self.w_q_bb,
+            Colour::Black => self.b_q_bb,
+        };
+        self.queen_attacks(sq, colour)
+    }
+    pub fn queen_moves(&self, sq: u64) -> u64 {
+          core::rook_moves_bb(sq, self.unoccupied_bb())
+        | core::bish_moves_bb(sq, self.unoccupied_bb()) 
         & self.unoccupied_bb()
     }
-    /// Gets bitboard of all black queen moves
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_queen_moves(&self) -> u64 {
-          core::rook_moves_bb(self.b_q_bb, self.unoccupied_bb())
-        | core::bish_moves_bb(self.b_q_bb, self.unoccupied_bb()) 
-        & self.unoccupied_bb()
+    pub fn queen_attacks(&self, sq: u64, colour: Colour) -> u64 {
+        match colour {
+            Colour::White => core::rook_moves_bb(sq, self.unoccupied_bb())
+                           | core::bish_moves_bb(sq, self.unoccupied_bb()) 
+                           & self.black_bb(),
+            Colour::Black => core::rook_moves_bb(sq, self.unoccupied_bb())
+                           | core::bish_moves_bb(sq, self.unoccupied_bb()) 
+                           & self.white_bb(),
+        }
     }
-    /// Gets bitboard of all possible white queen attacks
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn white_queen_attacks(&self) -> u64 {
-          core::rook_moves_bb(self.w_q_bb, self.unoccupied_bb())
-        | core::bish_moves_bb(self.w_q_bb, self.unoccupied_bb()) 
-        & self.black_bb()
-    }
-    /// Gets bitboard of all possible black queen attacks
-    /// NOTE: Doesn't account for illegal moves such as when the piece is pinned
-    pub fn black_queen_attacks(&self) -> u64 {
-          core::rook_moves_bb(self.b_q_bb, self.unoccupied_bb())
-        | core::bish_moves_bb(self.b_q_bb, self.unoccupied_bb()) 
-        & self.white_bb()
-    }
+
     /// Gets a bitboard of all squares that are threatened by white
     /// NOTE: Doesn't include en-passant target square
     pub fn all_white_attacks(&self) -> u64 {
-          self.white_pawn_attacks() 
-        | self.white_knight_attacks()
-        | self.white_king_attacks()
-        | self.white_bishop_attacks()
-        | self.white_rook_attacks()
-        | self.white_queen_attacks()
+          self.all_pawn_attacks(Colour::White) 
+        | self.all_knight_attacks(Colour::White)
+        | self.all_king_attacks(Colour::White)
+        | self.all_bishop_attacks(Colour::White)
+        | self.all_rook_attacks(Colour::White)
+        | self.all_queen_attacks(Colour::White)
     }
     /// Gets a bitboard of all squares that are threatened by black
     /// NOTE: Doesn't include en-passant target square
     pub fn all_black_attacks(&self) -> u64 {
-          self.black_pawn_attacks() 
-        | self.black_knight_attacks()
-        | self.black_king_attacks()
-        | self.black_bishop_attacks()
-        | self.black_rook_attacks()
-        | self.black_queen_attacks()
+          self.all_pawn_attacks(Colour::Black) 
+        | self.all_knight_attacks(Colour::Black)
+        | self.all_king_attacks(Colour::Black)
+        | self.all_bishop_attacks(Colour::Black)
+        | self.all_rook_attacks(Colour::Black)
+        | self.all_queen_attacks(Colour::Black)
     }
     /// Sees if a given (black-occupied) square is under attack by any white piece
     pub fn piece_is_attacked_by_white(&self, sq: Square) -> bool {
@@ -227,7 +284,7 @@ impl Board {
         todo!()
     } 
 
-    fn piece_at(&self, offset: u64) -> Option<(Piece, Colour)> {
+    pub fn piece_at(&self, offset: u64) -> Option<(Piece, Colour)> {
         use Piece::*;
         use Colour::*;
              if (self.w_p_bb & offset) == offset { Some((Pawn,   White)) }
@@ -343,4 +400,124 @@ impl Board {
         }
 
     }    
+
+    pub fn get_board(&self, white_pov: bool) -> String {
+        let mut board = String::new();
+
+        let mut rank = String::new();
+        let mut letters = if white_pov {vec!['8', '7', '6', '5', '4', '3', '2', '1']} else {vec!['1', '2', '3', '4', '5', '6', '7', '8']}.into_iter();
+        
+        for i in 0..64 {
+            let offset = if white_pov { 1 << (63-i) } else { 1 << i };
+            let prev = rank;
+            // NOTE: i would have liked to use ♙♖♘♗♕♔ ♟︎♞♝♜♛♚ but they don't seem to line up properly with certain fonts/terminals 🙃
+            rank = match self.piece_at(offset) {
+                Some(piece) => match piece {
+                    // White Pieces
+                    (Piece::Pawn,   Colour::White) => format!("{}{}", " P".bright_blue(), &prev),
+                    (Piece::Rook,   Colour::White) => format!("{}{}", " R".bright_blue(), &prev),
+                    (Piece::Knight, Colour::White) => format!("{}{}", " N".bright_blue(), &prev),
+                    (Piece::Bishop, Colour::White) => format!("{}{}", " B".bright_blue(), &prev),
+                    (Piece::Queen,  Colour::White) => format!("{}{}", " Q".bright_blue(), &prev),
+                    (Piece::King,   Colour::White) => format!("{}{}", " K".bright_blue(), &prev),
+                    // Black Pieces
+                    (Piece::Pawn,   Colour::Black) => format!("{}{}", " P".bright_red(),  &prev),
+                    (Piece::Rook,   Colour::Black) => format!("{}{}", " R".bright_red(),  &prev),
+                    (Piece::Knight, Colour::Black) => format!("{}{}", " N".bright_red(),  &prev),
+                    (Piece::Bishop, Colour::Black) => format!("{}{}", " B".bright_red(),  &prev),
+                    (Piece::Queen,  Colour::Black) => format!("{}{}", " Q".bright_red(),  &prev),
+                    (Piece::King,   Colour::Black) => format!("{}{}", " K".bright_red(),  &prev),
+                },
+                None => format!("{}{}", " ·", &prev),
+            };
+            if i % 8 == 7 {
+                board.push(letters.next().unwrap());
+                board.push_str(rank.as_str());
+                board.push_str("\r\n");
+                rank = "".to_string();
+            }
+        }
+        if white_pov {
+            board.push_str("~ A B C D E F G H\r");
+        } else {
+            board.push_str("~ H G F E D C B A\r");
+        }
+
+        board
+    }
+
+    pub fn get_move_board(&self, white_pov: bool, ply: Ply) -> String {
+        todo!()
+    } 
+
+    pub fn get_possible_moves_board(&self, white_pov: bool, sq: Square) -> String {
+        // FIXME: Doesn't filter illegal moves or pinned pieces
+        // NOTE: Assumes sq is valid
+
+        let sq = sq.as_bb();
+        
+        let (attacks, moves) = match self.piece_at(sq) {
+            Some((p, c)) => match p {
+                Piece::Pawn =>(self.pawn_attacks(sq, c), self.pawn_single_push(sq, c) | self.pawn_double_push(sq, c)),
+                Piece::Knight => (self.knight_attacks(sq, c), self.knight_moves(sq)),
+                Piece::Bishop => (self.bishop_attacks(sq, c), self.bishop_moves(sq)),
+                Piece::Rook   => (self.rook_attacks(sq, c),   self.rook_moves(sq)),
+                Piece::Queen  => (self.queen_attacks(sq, c),  self.queen_moves(sq)),
+                Piece::King   => (self.king_attacks(sq, c),   self.king_moves(sq)),
+            },
+            None => todo!(),
+        };
+
+        println!("{moves:b}");
+        
+
+        let mut board = String::new();
+
+        let mut rank = String::new();
+        let mut letters = if white_pov {vec!['8', '7', '6', '5', '4', '3', '2', '1']} else {vec!['1', '2', '3', '4', '5', '6', '7', '8']}.into_iter();
+        
+        for i in 0..64 {
+            let offset = if white_pov { 1 << (63-i) } else { 1 << i };
+            let prev = rank;
+            // NOTE: i would have liked to use ♙♖♘♗♕♔ ♟︎♞♝♜♛♚ but they don't seem to line up properly with certain fonts/terminals 🙃
+            rank = match self.piece_at(offset) {
+                Some(piece) => match piece {
+                    // White Pieces
+                    (Piece::Pawn,   Colour::White) => format!("{}{}", if offset & attacks != 0 {" P".black().on_bright_red()} else {" P".bright_blue()}, &prev),
+                    (Piece::Rook,   Colour::White) => format!("{}{}", if offset & attacks != 0 {" R".black().on_bright_red()} else {" R".bright_blue()}, &prev),
+                    (Piece::Knight, Colour::White) => format!("{}{}", if offset & attacks != 0 {" N".black().on_bright_red()} else {" N".bright_blue()}, &prev),
+                    (Piece::Bishop, Colour::White) => format!("{}{}", if offset & attacks != 0 {" B".black().on_bright_red()} else {" B".bright_blue()}, &prev),
+                    (Piece::Queen,  Colour::White) => format!("{}{}", if offset & attacks != 0 {" Q".black().on_bright_red()} else {" Q".bright_blue()}, &prev),
+                    (Piece::King,   Colour::White) => format!("{}{}", if offset & attacks != 0 {" K".black().on_bright_red()} else {" K".bright_blue()}, &prev),
+                    // Black Pieces
+                    (Piece::Pawn,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" P".black().on_bright_blue()} else {" P".bright_red()},  &prev),
+                    (Piece::Rook,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" R".black().on_bright_blue()} else {" P".bright_red()},  &prev),
+                    (Piece::Knight, Colour::Black) => format!("{}{}", if offset & attacks != 0 {" N".black().on_bright_blue()} else {" P".bright_red()},  &prev),
+                    (Piece::Bishop, Colour::Black) => format!("{}{}", if offset & attacks != 0 {" B".black().on_bright_blue()} else {" P".bright_red()},  &prev),
+                    (Piece::Queen,  Colour::Black) => format!("{}{}", if offset & attacks != 0 {" Q".black().on_bright_blue()} else {" P".bright_red()},  &prev),
+                    (Piece::King,   Colour::Black) => format!("{}{}", if offset & attacks != 0 {" K".black().on_bright_blue()} else {" P".bright_red()},  &prev),
+                },
+                None => if (offset & moves) != 0  {
+                    format!("{}{}", " ·".on_green(), &prev)
+                } else {
+                    format!("{}{}", " ·", &prev)
+                },
+            };
+            if i % 8 == 7 {
+                board.push(letters.next().unwrap());
+                board.push_str(rank.as_str());
+                board.push_str("\r\n");
+                rank = "".to_string();
+            }
+        }
+        if white_pov {
+            board.push_str("~ A B C D E F G H\r");
+        } else {
+            board.push_str("~ H G F E D C B A\r");
+        }
+
+        board
+
+    }
+
 }
