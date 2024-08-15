@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::core::Square;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Piece {
     Pawn,
     Knight,
